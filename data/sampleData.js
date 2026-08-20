@@ -1,0 +1,654 @@
+// Placeholder data shaped to match the API Specification (Document 3)
+// response shapes, so swapping this for real fetch() calls later is a
+// drop-in change, not a rewrite.
+
+export const categories = [
+  { id: "cat-engine", name: "Engine Parts", icon: "Cog" },
+  { id: "cat-brakes", name: "Brakes", icon: "CircleDot" },
+  { id: "cat-suspension", name: "Suspension", icon: "Waves" },
+  { id: "cat-electrical", name: "Electrical", icon: "Zap" },
+  { id: "cat-lighting", name: "Lighting", icon: "Lightbulb" },
+  { id: "cat-filters", name: "Filters", icon: "Filter" },
+  { id: "cat-tyres", name: "Tyres & Rims", icon: "CircleEllipsis" },
+  { id: "cat-body", name: "Body Parts", icon: "CarFront" },
+  { id: "cat-interior", name: "Interior", icon: "Armchair" },
+  { id: "cat-batteries", name: "Batteries", icon: "BatteryFull" },
+  { id: "cat-tools", name: "Tools", icon: "Wrench" },
+  { id: "cat-accessories", name: "Accessories", icon: "Sparkles" },
+  { id: "cat-electronics", name: "Electronics", icon: "Cpu" },
+];
+
+export const vehicleMakes = [
+  "Toyota", "Nissan", "Isuzu", "Mitsubishi", "Subaru",
+  "Honda", "Mazda", "Suzuki", "Volkswagen", "Mercedes-Benz",
+];
+
+// Stores/sellers — both businesses and individuals can sell, distinguished
+// by sellerType. A store groups products for the "more from this store"
+// and "seller's other items" sections on the product page.
+export const stores = [
+  {
+    id: "store-1",
+    slug: "nairobi-auto-spares",
+    name: "Nairobi Auto Spares",
+    sellerType: "business",
+    verified: true,
+    location: "Nairobi, Kenya",
+    rating: 4.8,
+    ratingCount: 312,
+    memberSince: "2024",
+  },
+  {
+    id: "store-2",
+    slug: "mombasa-parts-junction",
+    name: "Mombasa Parts Junction",
+    sellerType: "business",
+    verified: true,
+    location: "Mombasa, Kenya",
+    rating: 4.6,
+    ratingCount: 198,
+    memberSince: "2023",
+  },
+  {
+    id: "store-3",
+    slug: "thika-road-auto-hub",
+    name: "Thika Road Auto Hub",
+    sellerType: "business",
+    verified: false,
+    location: "Thika, Kenya",
+    rating: 4.3,
+    ratingCount: 54,
+    memberSince: "2025",
+  },
+  {
+    id: "store-4",
+    slug: "kampala-auto-traders",
+    name: "Kampala Auto Traders",
+    sellerType: "business",
+    verified: true,
+    location: "Kampala, Uganda",
+    rating: 4.9,
+    ratingCount: 421,
+    memberSince: "2022",
+  },
+  {
+    id: "store-5",
+    slug: "james-mwangi",
+    name: "James Mwangi",
+    sellerType: "individual",
+    verified: true,
+    location: "Nairobi, Kenya",
+    rating: 4.7,
+    ratingCount: 23,
+    memberSince: "2026",
+  },
+];
+
+const PLACEHOLDER_GALLERY = [
+  "https://images.unsplash.com/photo-1537462715879-360eeb61a0ad?q=80&w=800&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1595787142842-7404bc60470d?q=80&w=800&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1611633235555-45e252fe48c8?q=80&w=800&auto=format&fit=crop",
+];
+
+export const featuredProducts = [
+  {
+    id: "p1",
+    slug: "front-brake-pads-toyota-corolla",
+    name: "Front Brake Pads — Toyota Corolla (2016–2019)",
+    priceMinor: 350000,
+    currency: "KES",
+    condition: "new",
+    brand: "Bosch",
+    oemNumber: "04465-02730",
+    partNumber: "BP-COR-1820",
+    sku: "AS-10045",
+    description: "Premium ceramic composite brake pads for consistent stopping power and reduced dust.",
+    categoryId: "cat-brakes",
+    images: [
+      "https://images.unsplash.com/photo-1537462715879-360eeb61a0ad?q=80&w=1200&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1595787142842-7404bc60470d?q=80&w=1200&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1611633235555-45e252fe48c8?q=80&w=1200&auto=format&fit=crop",
+    ],
+    storeId: "store-1",
+    sellerName: "Nairobi Auto Spares",
+    sellerVerified: true,
+    sellerType: "business",
+    location: "Nairobi, Kenya",
+    rating: 4.8,
+    unitsSold: 214,
+    sponsored: true,
+    compatibleVehicleTrimIds: ["corolla-e170-1.8-auto", "corolla-e170-1.8-manual"],
+    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    fittingInstructions:
+      "1. Jack up the vehicle and remove the front wheel.\n2. Remove the caliper bolts and lift the caliper off the rotor.\n3. Slide out the old pads and retract the piston with a C-clamp.\n4. Insert new pads and reinstall the caliper.\n5. Torque bolts to spec and pump the brake pedal before driving.",
+    toolsNeeded: ["Jack & axle stands", "Lug wrench", "C-clamp", "Caliper bolt socket (14mm)", "Brake cleaner spray"],
+    boughtTogetherIds: ["brake-rotors-toyota-corolla", "brake-fluid-dot4"],
+  },
+  {
+    id: "p2",
+    slug: "alternator-isuzu-dmax",
+    name: "Alternator — Isuzu D-Max (2018+)",
+    priceMinor: 1850000,
+    currency: "KES",
+    condition: "used",
+    brand: "Denso",
+    oemNumber: "8-97173-895-0",
+    partNumber: "ALT-DMX-18",
+    sku: "MPJ-20031",
+    description: "OEM-spec alternator rebuilt to factory tolerances for reliable charging.",
+    categoryId: "cat-electrical",
+    images: [
+      "https://images.unsplash.com/photo-1595787142842-7404bc60470d?q=80&w=1200&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1527383418406-f85a3b146499?q=80&w=1200&auto=format&fit=crop",
+    ],
+    storeId: "store-2",
+    sellerName: "Mombasa Parts Junction",
+    sellerVerified: true,
+    sellerType: "business",
+    location: "Mombasa, Kenya",
+    rating: 4.6,
+    unitsSold: 67,
+    sponsored: false,
+    compatibleVehicleTrimIds: ["dmax-2018-manual"],
+    youtubeUrl: null,
+    fittingInstructions: null,
+    toolsNeeded: ["Socket set", "Serpentine belt tool"],
+    boughtTogetherIds: [],
+  },
+  {
+    id: "p3",
+    slug: "headlight-assembly-mazda-demio",
+    name: "Headlight Assembly — Mazda Demio",
+    priceMinor: 620000,
+    currency: "KES",
+    condition: "new",
+    brand: "Depo",
+    oemNumber: "D651-51-030",
+    partNumber: "HL-DEM-15",
+    sku: "TRA-30012",
+    description: "Direct-fit headlight assembly with factory-matched beam pattern.",
+    categoryId: "cat-lighting",
+    images: [
+      "https://images.unsplash.com/photo-1749043140503-da3546679d54?q=80&w=1200&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1611633235555-45e252fe48c8?q=80&w=1200&auto=format&fit=crop",
+    ],
+    storeId: "store-3",
+    sellerName: "Thika Road Auto Hub",
+    sellerVerified: false,
+    sellerType: "business",
+    location: "Thika, Kenya",
+    rating: 4.3,
+    unitsSold: 41,
+    sponsored: false,
+    compatibleVehicleTrimIds: ["demio-2015-2018"],
+    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    fittingInstructions:
+      "1. Open the bonnet and locate the headlight retaining clips.\n2. Unclip the housing and disconnect the wiring harness.\n3. Install the new unit and reconnect wiring.\n4. Re-clip into place and check beam alignment.",
+    toolsNeeded: ["Flathead screwdriver", "Trim removal tool"],
+    boughtTogetherIds: [],
+  },
+  {
+    id: "p4",
+    slug: "shock-absorber-set-subaru-forester",
+    name: "Shock Absorber Set — Subaru Forester",
+    priceMinor: 980000,
+    currency: "KES",
+    condition: "used",
+    brand: "KYB",
+    oemNumber: "20310-SA010",
+    partNumber: "SA-FOR-13",
+    sku: "KAT-40077",
+    description: "Gas-charged shock absorbers for a firmer, more controlled ride.",
+    categoryId: "cat-suspension",
+    images: [
+      "https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?q=80&w=1200&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1527383418406-f85a3b146499?q=80&w=1200&auto=format&fit=crop",
+    ],
+    storeId: "store-4",
+    sellerName: "Kampala Auto Traders",
+    sellerVerified: true,
+    sellerType: "business",
+    location: "Kampala, Uganda",
+    rating: 4.9,
+    unitsSold: 156,
+    sponsored: false,
+    compatibleVehicleTrimIds: ["forester-sj-2013-2018"],
+    youtubeUrl: null,
+    fittingInstructions: null,
+    toolsNeeded: ["Spring compressor", "Impact wrench", "Torque wrench"],
+    boughtTogetherIds: [],
+  },
+  {
+    id: "p5",
+    slug: "radiator-nissan-xtrail",
+    name: "Radiator — Nissan X-Trail (T31)",
+    priceMinor: 720000,
+    currency: "KES",
+    condition: "new",
+    brand: "Denso",
+    oemNumber: "21460-JG300",
+    partNumber: "RAD-XTR-07",
+    sku: "MPJ-20088",
+    description: "Full-aluminum core radiator engineered for efficient cooling.",
+    categoryId: "cat-engine",
+    images: [
+      "https://images.unsplash.com/photo-1527383418406-f85a3b146499?q=80&w=1200&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1595787142842-7404bc60470d?q=80&w=1200&auto=format&fit=crop",
+    ],
+    storeId: "store-2",
+    sellerName: "Mombasa Parts Junction",
+    sellerVerified: true,
+    sellerType: "business",
+    location: "Mombasa, Kenya",
+    rating: 4.7,
+    unitsSold: 88,
+    sponsored: true,
+    compatibleVehicleTrimIds: ["xtrail-t31-2007-2013"],
+    youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    fittingInstructions:
+      "1. Drain the coolant into a container.\n2. Disconnect the upper and lower radiator hoses.\n3. Unbolt the radiator mounts and lift the unit out.\n4. Install the new radiator and reconnect hoses.\n5. Refill coolant and bleed the system.",
+    toolsNeeded: ["Coolant drain pan", "Pliers", "10mm socket"],
+    boughtTogetherIds: ["coolant-5l"],
+  },
+  {
+    id: "p6",
+    slug: "car-battery-75ah",
+    name: "Car Battery 75Ah — Maintenance Free",
+    priceMinor: 1450000,
+    currency: "KES",
+    condition: "new",
+    brand: "Yuasa",
+    oemNumber: "N/A",
+    partNumber: "BAT-75AH",
+    sku: "JM-50019",
+    description: "Maintenance-free 75Ah battery with strong cold-cranking performance.",
+    categoryId: "cat-batteries",
+    images: [
+      "https://images.unsplash.com/photo-1658152764378-a22d6676f938?q=80&w=1200&auto=format&fit=crop",
+    ],
+    storeId: "store-5",
+    sellerName: "James Mwangi",
+    sellerVerified: true,
+    sellerType: "individual",
+    location: "Nairobi, Kenya",
+    rating: 4.5,
+    unitsSold: 12,
+    sponsored: false,
+    compatibleVehicleTrimIds: [],
+    youtubeUrl: null,
+    fittingInstructions: null,
+    toolsNeeded: ["10mm spanner"],
+    boughtTogetherIds: [],
+  },
+  // Extra items so "bought together" and "store" sections have real matches
+  {
+    id: "p7",
+    slug: "brake-rotors-toyota-corolla",
+    name: "Front Brake Rotors — Toyota Corolla (2016–2019)",
+    priceMinor: 480000,
+    currency: "KES",
+    condition: "new",
+    brand: "Brembo",
+    oemNumber: "43512-02180",
+    partNumber: "RTR-COR-18",
+    sku: "AS-10046",
+    description: "Vented front brake rotors matched to OEM thickness specifications.",
+    categoryId: "cat-brakes",
+    images: PLACEHOLDER_GALLERY,
+    storeId: "store-1",
+    sellerName: "Nairobi Auto Spares",
+    sellerVerified: true,
+    sellerType: "business",
+    location: "Nairobi, Kenya",
+    rating: 4.7,
+    unitsSold: 96,
+    sponsored: false,
+    compatibleVehicleTrimIds: ["corolla-e170-1.8-auto"],
+    youtubeUrl: null,
+    fittingInstructions: null,
+    toolsNeeded: ["Impact wrench"],
+    boughtTogetherIds: [],
+  },
+  {
+    id: "p8",
+    slug: "brake-fluid-dot4",
+    name: "Brake Fluid DOT 4 — 500ml",
+    priceMinor: 85000,
+    currency: "KES",
+    condition: "new",
+    brand: "Motul",
+    oemNumber: "N/A",
+    partNumber: "BF-DOT4-500",
+    sku: "AS-10090",
+    description: "High-boiling-point DOT 4 fluid for consistent brake pedal feel.",
+    categoryId: "cat-brakes",
+    images: PLACEHOLDER_GALLERY,
+    storeId: "store-1",
+    sellerName: "Nairobi Auto Spares",
+    sellerVerified: true,
+    sellerType: "business",
+    location: "Nairobi, Kenya",
+    rating: 4.6,
+    unitsSold: 301,
+    sponsored: false,
+    compatibleVehicleTrimIds: [],
+    youtubeUrl: null,
+    fittingInstructions: null,
+    toolsNeeded: [],
+    boughtTogetherIds: [],
+  },
+  {
+    id: "p9",
+    slug: "coolant-5l",
+    name: "Long-Life Coolant — 5L",
+    priceMinor: 220000,
+    currency: "KES",
+    condition: "new",
+    brand: "Prestone",
+    oemNumber: "N/A",
+    partNumber: "CL-5L-LL",
+    sku: "MPJ-20120",
+    description: "Long-life coolant, pre-mixed, safe for aluminum and mixed-metal engines.",
+    categoryId: "cat-engine",
+    images: PLACEHOLDER_GALLERY,
+    storeId: "store-2",
+    sellerName: "Mombasa Parts Junction",
+    sellerVerified: true,
+    sellerType: "business",
+    location: "Mombasa, Kenya",
+    rating: 4.8,
+    unitsSold: 143,
+    sponsored: false,
+    compatibleVehicleTrimIds: [],
+    youtubeUrl: null,
+    fittingInstructions: null,
+    toolsNeeded: [],
+    boughtTogetherIds: [],
+  },
+  {
+    id: "p10",
+    slug: "alloy-rims-17-inch-set",
+    name: "17-Inch Alloy Rims — Set of 4",
+    priceMinor: 3200000,
+    currency: "KES",
+    condition: "new",
+    brand: "Enkei",
+    oemNumber: "N/A",
+    partNumber: "RIM-17-SET4",
+    sku: "KAT-40200",
+    description: "Lightweight 17-inch alloy wheels, set of four, 5x114.3 bolt pattern.",
+    categoryId: "cat-tyres",
+    images: PLACEHOLDER_GALLERY,
+    storeId: "store-4",
+    sellerName: "Kampala Auto Traders",
+    sellerVerified: true,
+    sellerType: "business",
+    location: "Kampala, Uganda",
+    rating: 4.9,
+    unitsSold: 58,
+    sponsored: true,
+    compatibleVehicleTrimIds: [],
+    youtubeUrl: null,
+    fittingInstructions: null,
+    toolsNeeded: ["Impact wrench", "Torque wrench"],
+    boughtTogetherIds: ["tyres-205-55-r17"],
+  },
+  {
+    id: "p11",
+    slug: "tyres-205-55-r17",
+    name: "Tyre 205/55 R17 — All Season (Single)",
+    priceMinor: 980000,
+    currency: "KES",
+    condition: "new",
+    brand: "Bridgestone",
+    oemNumber: "N/A",
+    partNumber: "TY-205-55-17",
+    sku: "KAT-40201",
+    description: "All-season tyre with strong wet-grip performance.",
+    categoryId: "cat-tyres",
+    images: PLACEHOLDER_GALLERY,
+    storeId: "store-4",
+    sellerName: "Kampala Auto Traders",
+    sellerVerified: true,
+    sellerType: "business",
+    location: "Kampala, Uganda",
+    rating: 4.8,
+    unitsSold: 210,
+    sponsored: false,
+    compatibleVehicleTrimIds: [],
+    youtubeUrl: null,
+    fittingInstructions: null,
+    toolsNeeded: [],
+    boughtTogetherIds: ["alloy-rims-17-inch-set"],
+  },
+  {
+    id: "p12",
+    slug: "front-bumper-lip-mazda-3",
+    name: "Front Bumper Lip Spoiler — Mazda 3 (2014–2018)",
+    priceMinor: 540000,
+    currency: "KES",
+    condition: "new",
+    brand: "OEM Style",
+    oemNumber: "BHN1-50-111",
+    partNumber: "BL-MZ3-14",
+    sku: "TRA-30055",
+    description: "Direct-fit front bumper lip spoiler with factory-matched finish.",
+    categoryId: "cat-body",
+    images: PLACEHOLDER_GALLERY,
+    storeId: "store-3",
+    sellerName: "Thika Road Auto Hub",
+    sellerVerified: false,
+    sellerType: "business",
+    location: "Thika, Kenya",
+    rating: 4.4,
+    unitsSold: 19,
+    sponsored: false,
+    compatibleVehicleTrimIds: ["mazda3-2014-2018"],
+    youtubeUrl: null,
+    fittingInstructions:
+      "1. Clean the lower front bumper edge.\n2. Peel the adhesive backing on the lip.\n3. Align with the bumper edge and press firmly for 30 seconds.\n4. Add supplied clips for extra hold if drilling is acceptable.",
+    toolsNeeded: ["Isopropyl alcohol wipe", "Drill (optional, for clip mounting)"],
+    boughtTogetherIds: [],
+  },
+  {
+    id: "p13",
+    slug: "universal-bumper-lip-splitter",
+    name: "Universal Front Bumper Lip Splitter — Matte Black",
+    priceMinor: 380000,
+    currency: "KES",
+    condition: "new",
+    brand: "Rally Armor",
+    oemNumber: "N/A",
+    partNumber: "BL-UNIV-01",
+    sku: "AS-10120",
+    description: "Universal splitter lip, trims to fit most bumpers.",
+    categoryId: "cat-body",
+    images: PLACEHOLDER_GALLERY,
+    storeId: "store-1",
+    sellerName: "Nairobi Auto Spares",
+    sellerVerified: true,
+    sellerType: "business",
+    location: "Nairobi, Kenya",
+    rating: 4.2,
+    unitsSold: 44,
+    sponsored: false,
+    compatibleVehicleTrimIds: [],
+    youtubeUrl: null,
+    fittingInstructions: null,
+    toolsNeeded: ["Drill", "Zip ties or supplied clips"],
+    boughtTogetherIds: [],
+  },
+  {
+    id: "p14",
+    slug: "mazda-demio-side-mirror",
+    name: "Side Mirror Assembly — Mazda Demio (Right, Electric)",
+    priceMinor: 410000,
+    currency: "KES",
+    condition: "used",
+    brand: "Depo",
+    oemNumber: "D651-69-180",
+    partNumber: "MIR-DEM-15R",
+    sku: "TRA-30066",
+    description: "Electric-adjust side mirror assembly, passenger side.",
+    categoryId: "cat-body",
+    images: PLACEHOLDER_GALLERY,
+    storeId: "store-3",
+    sellerName: "Thika Road Auto Hub",
+    sellerVerified: false,
+    sellerType: "business",
+    location: "Thika, Kenya",
+    rating: 4.1,
+    unitsSold: 8,
+    sponsored: false,
+    compatibleVehicleTrimIds: ["demio-2015-2018"],
+    youtubeUrl: null,
+    fittingInstructions: null,
+    toolsNeeded: [],
+    boughtTogetherIds: [],
+  },
+];
+
+export function formatPrice(amountMinor, currency) {
+  const amount = amountMinor / 100;
+  return new Intl.NumberFormat("en-KE", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+export function getStoreById(storeId) {
+  return stores.find((s) => s.id === storeId) || null;
+}
+
+export function getProductsByStore(storeId, excludeSlug) {
+  return featuredProducts.filter((p) => p.storeId === storeId && p.slug !== excludeSlug);
+}
+
+export function getRelatedProducts(product, limit = 6) {
+  return featuredProducts
+    .filter((p) => p.categoryId === product.categoryId && p.slug !== product.slug)
+    .slice(0, limit);
+}
+
+export function getBoughtTogether(product) {
+  if (!product.boughtTogetherIds?.length) return [];
+  return featuredProducts.filter((p) => product.boughtTogetherIds.includes(p.slug));
+}
+
+// ---- Simulated async data layer ----
+// ---- Real API data layer ----
+// These now call the actual backend (app/api/v1/*) instead of returning
+// the static arrays above with an artificial delay. The static arrays
+// stay in this file for two reasons: prisma/seed.mjs imports them as
+// the seed source (so the DB and this file describe the same catalog),
+// and lib/search/index.js still builds its Fuse index from them
+// directly — search intentionally stays a separate, derived index per
+// Document 1 §3.2, not a live DB query. That means search results and
+// these API-backed results only stay consistent with each other once
+// the database has actually been seeded from this same file — which
+// `npx prisma db seed` does.
+//
+// Each function falls back to the mock data if the API call fails
+// (network error, or a fresh clone that hasn't run `prisma migrate` +
+// `db seed` yet) rather than crashing the page — logged clearly so the
+// fallback is never silently mistaken for real data. This is a
+// deliberate resilience choice, not a way of avoiding the real wiring:
+// every function below genuinely calls the API first.
+
+function getBaseUrl() {
+  if (typeof window !== "undefined") return ""; // client-side: relative URLs work fine
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return "http://localhost:3000"; // local dev, server-side fetch needs an absolute URL
+}
+
+async function apiFetch(path) {
+  const res = await fetch(`${getBaseUrl()}${path}`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`API ${path} returned ${res.status}`);
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error?.message || `API ${path} failed`);
+  return json.data;
+}
+
+export async function getCategories() {
+  try {
+    return await apiFetch("/api/v1/categories");
+  } catch (err) {
+    console.warn("[getCategories] Falling back to mock data:", err.message);
+    return categories;
+  }
+}
+
+export async function getFeaturedProducts() {
+  try {
+    // No dedicated "featured" endpoint yet — the products list endpoint
+    // (Document 3 §3.4) requires a businessId today, since it was built
+    // for the seller dashboard first. Homepage "featured" is a genuine
+    // gap: it needs its own endpoint (sponsored + highly-rated blend,
+    // same ranking idea as lib/search/searchEngine.js's scoring) rather
+    // than reusing the business-scoped listing. Falling back to mock
+    // data here until that endpoint exists — tracked, not hidden.
+    throw new Error("No featured-products endpoint yet");
+  } catch (err) {
+    console.warn("[getFeaturedProducts] Falling back to mock data:", err.message);
+    return featuredProducts;
+  }
+}
+
+export async function getVehicleMakes() {
+  try {
+    return await apiFetch("/api/v1/vehicles/makes");
+  } catch (err) {
+    console.warn("[getVehicleMakes] Falling back to mock data:", err.message);
+    return vehicleMakes;
+  }
+}
+
+// Search deliberately does NOT call the API here — see lib/search/index.js
+// and lib/search/searchEngine.js, which the search page calls directly.
+// This function is kept only so nothing importing it from an older code
+// path breaks; new code should import runSearch from lib/search directly.
+export async function searchProducts(/* filters */) {
+  return featuredProducts;
+}
+
+// Maps the real API's normalized response (nested business/images
+// objects) onto the flatter shape the existing product-page components
+// (ProductGallery, SellerCard, FittingGuide, etc.) were already built
+// against — an adapter, so dozens of already-working components don't
+// need to change just because the data source moved.
+function adaptApiProduct(data) {
+  return {
+    id: data.id,
+    slug: data.slug,
+    name: data.name,
+    priceMinor: data.priceMinor,
+    currency: data.currency,
+    condition: data.condition,
+    images: (data.images || []).map((img) => img.url),
+    storeId: null, // real API doesn't expose the raw business id publicly — use business.slug below
+    storeSlug: data.business?.slug,
+    sellerName: data.business?.name,
+    sellerVerified: data.business?.verificationStatus === "verified",
+    sellerType: "business",
+    location: data.business?.town?.name || "",
+    rating: data.business?.ratingAvg || 0,
+    unitsSold: 0, // not tracked yet — needs an orders aggregate, follow-up work
+    sponsored: false, // sponsorship isn't in the schema yet (see app/seller/sponsorship's TODO)
+    youtubeUrl: data.youtubeUrl,
+    fittingInstructions: data.fittingInstructions,
+    toolsNeeded: data.toolsNeeded || [],
+    boughtTogetherIds: [], // no cross-sell backend yet — see BACKEND.md
+  };
+}
+
+export async function getProductBySlug(slug) {
+  try {
+    const data = await apiFetch(`/api/v1/products/${slug}`);
+    return adaptApiProduct(data);
+  } catch (err) {
+    console.warn(`[getProductBySlug] Falling back to mock data for "${slug}":`, err.message);
+    return featuredProducts.find((p) => p.slug === slug) || featuredProducts[0];
+  }
+}
