@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { Store as StoreIcon, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import ProductCard from "@/components/ProductCard";

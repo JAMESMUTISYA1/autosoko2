@@ -1,4 +1,6 @@
 "use client";
+export const dynamic = 'force-dynamic';
+
 import { useState } from "react";
 import { Mail, Phone, MapPin, Loader2, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/contexts/ToastContext";
