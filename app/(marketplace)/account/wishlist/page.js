@@ -1,5 +1,5 @@
 "use client";
-
+export const dynamic = 'force-dynamic';
 import Link from "next/link";
 import { Heart } from "lucide-react";
 import { useWishlist } from "@/contexts/WishlistContext";

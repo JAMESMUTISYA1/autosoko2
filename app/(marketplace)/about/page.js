@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { ShieldCheck, Users, MapPin, Package } from "lucide-react";
 
 const STATS = [

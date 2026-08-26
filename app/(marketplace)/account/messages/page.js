@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import Link from "next/link";
 import { MessageCircle } from "lucide-react";
 import { stores } from "@/data/sampleData";
