@@ -1,7 +1,6 @@
 "use client";
-export const dynamic = 'force-dynamic';
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
@@ -36,14 +35,11 @@ const ICON_LINKS = [
   { href: "/account/wishlist", label: "Saved", icon: Heart },
 ];
 
-export default function Header() {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const { itemCount } = useCart();
-  const { data: session, status } = useSession();
+// ─── Component that uses `useSearchParams` — must be wrapped in <Suspense> ───
+function NavLinks({ mobile = false }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // Helper to check if a link is active (including query string matching)
   const isActive = (href) => {
     const [path, query] = href.split("?");
     if (pathname !== path) return false;
@@ -54,6 +50,39 @@ export default function Header() {
     }
     return true;
   };
+
+  return (
+    <>
+      {NAV_LINKS.map((link) => {
+        const active = isActive(link.href);
+        let className =
+          mobile
+            ? `block py-2.5 text-sm transition-colors ${
+                active
+                  ? "text-yellow-500 font-semibold border-b-2 border-yellow-500"
+                  : "text-gray-800 hover:text-accent"
+              }`
+            : `whitespace-nowrap pb-1 transition-colors ${
+                active
+                  ? "text-yellow-500 font-semibold border-b-2 border-yellow-500"
+                  : "hover:text-accent"
+              }`;
+        return (
+          <Link key={link.href} href={link.href} className={className}>
+            {link.label}
+          </Link>
+        );
+      })}
+    </>
+  );
+}
+
+// ─── Main Header ──────────────────────────────────────────────────────────────
+export default function Header() {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const { itemCount } = useCart();
+  const { data: session, status } = useSession();
+  const pathname = usePathname(); // safe – does not use searchParams
 
   useEffect(() => {
     if (mobileOpen) {
@@ -76,7 +105,6 @@ export default function Header() {
       <header className="sticky top-0 z-50 font-body">
         {/* Utility bar – blue background */}
         <div className="bg-accent text-white text-xs">
-          {/* Mobile: three key links */}
           <div className="md:hidden flex items-center justify-center gap-4 px-3 py-1">
             <Link href="/help" className="hover:text-white/80 transition-colors">
               Help Center
@@ -91,7 +119,6 @@ export default function Header() {
             </Link>
           </div>
 
-          {/* Desktop: full utility bar */}
           <div className="hidden md:flex items-center justify-between px-6 py-1.5">
             <div className="flex items-center gap-1.5">
               <MapPin size={12} />
@@ -118,19 +145,16 @@ export default function Header() {
         {/* Main header – white background */}
         <div className="bg-white text-fg px-3 sm:px-4 md:px-6 py-2 md:py-2.5 border-b border-line">
           <div className="flex items-center gap-3 md:gap-8">
-            {/* Logo */}
             <Link href="/" className="flex items-center shrink-0">
               <span className="font-display text-xl sm:text-2xl tracking-tight text-fg">
                 AUTO<span className="border-b-2 border-accent">SOKO</span>
               </span>
             </Link>
 
-            {/* Desktop search – with white background and border */}
             <div className="hidden md:flex flex-1 max-w-2xl bg-white border border-gray-300 rounded-md overflow-hidden">
               <SearchBar variant="desktop" />
             </div>
 
-            {/* Desktop right icons */}
             <div className="hidden md:flex items-center gap-4 lg:gap-5 ml-auto text-sm">
               {ICON_LINKS.map((link) => {
                 const Icon = link.icon;
@@ -190,7 +214,6 @@ export default function Header() {
               )}
             </div>
 
-            {/* Mobile right icons + hamburger */}
             <div className="md:hidden ml-auto flex items-center gap-3">
               <Link href="/cart" className="relative" aria-label="Cart">
                 <ShoppingCart size={22} />
@@ -212,34 +235,22 @@ export default function Header() {
             </div>
           </div>
 
-          {/* Mobile search – with white background and border */}
           <div className="md:hidden mt-2 bg-white border border-gray-300 rounded-md overflow-hidden">
             <SearchBar variant="mobile" />
           </div>
         </div>
 
-        {/* Secondary nav – very light gray background (desktop only) */}
+        {/* ── Desktop secondary nav – wrapped in Suspense ── */}
         <nav className="hidden md:flex items-center gap-6 lg:gap-8 bg-gray-50 text-gray-700 px-6 py-2 text-sm border-b border-line overflow-x-auto">
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`whitespace-nowrap pb-1 transition-colors ${
-                isActive(link.href)
-                  ? "text-yellow-500 font-semibold border-b-2 border-yellow-500"
-                  : "hover:text-accent"
-              }`}
-            >
-              {link.label}
-            </Link>
-          ))}
+          <Suspense fallback={<div className="h-6 w-40 animate-pulse bg-gray-200 rounded" />}>
+            <NavLinks mobile={false} />
+          </Suspense>
         </nav>
       </header>
 
-      {/* Mobile drawer – outside header, high z-index, white background, visible links */}
+      {/* ── Mobile drawer ── */}
       {mobileOpen && (
         <div className="fixed inset-0 z-[9999] md:hidden">
-          {/* Overlay */}
           <button
             type="button"
             className="absolute inset-0 w-full h-full bg-black/50"
@@ -247,7 +258,6 @@ export default function Header() {
             aria-label="Close menu"
           />
 
-          {/* Drawer */}
           <aside className="absolute right-0 top-0 h-full w-[85%] max-w-sm bg-white text-gray-900 shadow-2xl flex flex-col">
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
               <span className="font-display text-lg text-gray-900">
@@ -265,20 +275,9 @@ export default function Header() {
 
             <div className="flex-1 overflow-y-auto px-5 py-4">
               <nav className="space-y-1">
-                {NAV_LINKS.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={() => setMobileOpen(false)}
-                    className={`block py-2.5 text-sm transition-colors ${
-                      isActive(link.href)
-                        ? "text-yellow-500 font-semibold border-b-2 border-yellow-500"
-                        : "text-gray-800 hover:text-accent"
-                    }`}
-                  >
-                    {link.label}
-                  </Link>
-                ))}
+                <Suspense fallback={<div className="h-6 w-32 animate-pulse bg-gray-100" />}>
+                  <NavLinks mobile={true} />
+                </Suspense>
               </nav>
 
               <div className="grid grid-cols-3 gap-2 mt-5 pt-5 border-t border-gray-200">
