@@ -1,4 +1,3 @@
-export const dynamic = 'force-dynamic';
 import Link from "next/link";
 import * as Icons from "lucide-react";
 import { BadgeCheck, MapPin, Star, Home as HomeIcon } from "lucide-react";

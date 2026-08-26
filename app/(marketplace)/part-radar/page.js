@@ -1,4 +1,3 @@
-export const dynamic = 'force-dynamic';
 import Link from "next/link";
 import { Radar, Plus, MessageSquare, Clock } from "lucide-react";
 import { auth } from "@/auth"; // ✅ adjust this path to your NextAuth config
