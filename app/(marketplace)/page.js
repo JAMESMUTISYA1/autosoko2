@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { Suspense } from "react";
 import { Search, MessageCircle, Truck, ShieldCheck } from "lucide-react";
 import HomeBanners from "@/components/HomeBanners";
