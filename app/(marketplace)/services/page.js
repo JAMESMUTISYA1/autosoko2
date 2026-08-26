@@ -1,8 +1,8 @@
+export const dynamic = 'force-dynamic';
 import Link from "next/link";
 import * as Icons from "lucide-react";
 import { BadgeCheck, MapPin, Star, Home as HomeIcon } from "lucide-react";
 import { formatPrice } from "@/data/sampleData";
-export const dynamic = 'force-dynamic';
 function getBaseUrl() {
   if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
