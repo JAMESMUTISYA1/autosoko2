@@ -12,17 +12,31 @@ const createSchema = z.object({
   townId: z.string().uuid().optional(),
 });
 
-// GET /api/v1/part-requests?status=open — public, this is the "radar
-// scan" sellers/agents/admins browse
+// GET /api/v1/part-requests — returns only the authenticated user's requests.
+// Optional query param: status (open, closed, etc.) to filter by status.
 export async function GET(request) {
+  const session = await getSession();
+  if (!session?.user) return unauthorized();
+
   const { searchParams } = new URL(request.url);
-  const status = searchParams.get("status") || "open";
+  const status = searchParams.get("status");
+
+  const where = {
+    userId: session.user.id,
+    ...(status ? { status } : {}),
+  };
 
   const requests = await db.partRequest.findMany({
-    where: { status },
+    where,
     select: {
-      id: true, partName: true, description: true, partNumber: true, imageUrl: true,
-      vehicleInfo: true, status: true, createdAt: true,
+      id: true,
+      partName: true,
+      description: true,
+      partNumber: true,
+      imageUrl: true,
+      vehicleInfo: true,
+      status: true,
+      createdAt: true,
       user: { select: { fullName: true } },
       town: { select: { name: true } },
       _count: { select: { responses: true } },
@@ -32,7 +46,11 @@ export async function GET(request) {
 
   return Response.json({
     success: true,
-    data: requests.map((r) => ({ ...r, requesterName: r.user.fullName, responseCount: r._count.responses })),
+    data: requests.map((r) => ({
+      ...r,
+      requesterName: r.user.fullName,
+      responseCount: r._count.responses,
+    })),
   });
 }
 
@@ -41,20 +59,34 @@ export async function POST(request) {
   const session = await getSession();
   if (!session?.user) return unauthorized();
 
-  const { success: withinLimit } = await checkRateLimit(getClientIdentifier(request, session.user.id), "default");
-  if (!withinLimit) return Response.json({ success: false, error: { code: "RATE_LIMITED" } }, { status: 429 });
+  const { success: withinLimit } = await checkRateLimit(
+    getClientIdentifier(request, session.user.id),
+    "default"
+  );
+  if (!withinLimit)
+    return Response.json(
+      { success: false, error: { code: "RATE_LIMITED" } },
+      { status: 429 }
+    );
 
   let body;
   try {
     body = await request.json();
   } catch {
-    return Response.json({ success: false, error: { code: "VALIDATION_ERROR" } }, { status: 400 });
+    return Response.json(
+      { success: false, error: { code: "VALIDATION_ERROR" } },
+      { status: 400 }
+    );
   }
+
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) {
     const fields = {};
     for (const issue of parsed.error.issues) fields[issue.path[0]] = issue.message;
-    return Response.json({ success: false, error: { code: "VALIDATION_ERROR", fields } }, { status: 400 });
+    return Response.json(
+      { success: false, error: { code: "VALIDATION_ERROR", fields } },
+      { status: 400 }
+    );
   }
 
   const partRequest = await db.partRequest.create({

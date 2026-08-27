@@ -1,7 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { Suspense } from "react";
 import { Search, MessageCircle, Truck, ShieldCheck } from "lucide-react";
-import HomeBanners from "@/components/HomeBanners";
 import CategoryGrid from "@/components/CategoryGrid";
 import ProductCard from "@/components/ProductCard";
 import ProductCardSkeleton from "@/components/skeletons/ProductCardSkeleton";
@@ -37,7 +36,7 @@ async function FeaturedProducts() {
     where: {
       status: "active",
       deletedAt: null,
-      sponsored: true, // or any criteria for "featured"
+      sponsored: true,
     },
     orderBy: { viewCount: "desc" },
     take: 6,
@@ -86,8 +85,6 @@ async function CategoriesSection() {
       name: true,
       slug: true,
       iconUrl: true,
-      // Add icon if you store lucide icon names in DB
-      // icon: true,
     },
   });
 
@@ -97,39 +94,54 @@ async function CategoriesSection() {
 export default function HomePage() {
   return (
     <div>
-      {/* Hero Section — static, renders immediately */}
-      <section className="relative bg-white overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.06),transparent_60%)]" />
-        <div className="absolute top-0 right-0 w-24 h-24 md:w-40 md:h-40 bg-accent opacity-90" />
+      {/* Hero Section — fixed height, image fully visible with contain */}
+      <section className="relative overflow-hidden min-h-[280px] sm:min-h-[320px] md:min-h-[360px] lg:min-h-[400px] flex items-center bg-white">
+        {/* Background image: contain to show entire image, centered horizontally */}
+        <div
+          className="absolute inset-0 bg-no-repeat bg-center"
+          style={{
+            backgroundImage: "url('/herobg.png')",
+            backgroundSize: "contain",
+            backgroundPosition: "70% center",
+          }}
+        >
+          {/* White overlay (covers the entire container) */}
+          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/90 to-transparent to-[70%]" />
+        </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-8 pb-10 md:pt-10 md:pb-12">
+        {/* Accent square */}
+        <div className="absolute top-0 right-0 w-24 h-24 md:w-32 md:h-32 bg-accent opacity-90 z-10" />
+
+        {/* Content — vertically centered */}
+        <div className="relative z-20 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-8">
           <div className="max-w-2xl">
             <span className="inline-block font-mono text-xs tracking-wider text-accent bg-accent/10 border border-accent/30 px-3 py-1 rounded-full">
-              1M+ PARTS · 250,000+ SELLERS · 6 COUNTRIES
+              1M+ PARTS
             </span>
 
-            <h1 className="font-display text-3xl sm:text-4xl md:text-5xl text-gray-900 mt-4 leading-[1.15]">
+            <h1 className="font-display text-2xl sm:text-3xl md:text-4xl text-gray-900 mt-3 leading-[1.15]">
               Find the right part.
               <br className="hidden sm:block" />
               Every time.
             </h1>
 
-            <p className="text-gray-600 mt-3 text-base md:text-lg leading-relaxed max-w-xl">
+            <p className="text-gray-800 mt-2 text-sm md:text-base leading-relaxed max-w-xl">
               AutoSoko connects you to verified spare parts sellers across
               East Africa — from genuine OEM to trusted used parts, matched
               to your exact vehicle.
             </p>
 
-            <div className="mt-5">
+            <div className="mt-4">
               <a
                 href="/search"
-                className="inline-block bg-[#F68B1E] text-gray-900 font-semibold px-8 py-3 rounded-md hover:bg-[#e07e17] transition-colors shadow-sm"
+                className="inline-block bg-[#F68B1E] text-gray-900 font-semibold px-6 py-2.5 rounded-md hover:bg-[#e07e17] transition-colors shadow-sm text-sm md:text-base"
               >
                 Get Started
               </a>
             </div>
 
-            <div className="flex flex-wrap gap-2 mt-4 md:hidden">
+            {/* Mobile trust badges */}
+            <div className="flex flex-wrap gap-2 mt-3 md:hidden">
               <span className="inline-flex items-center gap-1 text-xs text-gray-600 bg-gray-100 px-2.5 py-1 rounded-full">
                 <ShieldCheck size={12} className="text-accent" /> Verified sellers
               </span>
@@ -142,11 +154,6 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-      </section>
-
-      {/* Promo banners */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-4 md:pt-6">
-        <HomeBanners />
       </section>
 
       {/* Featured products — Suspense with skeleton fallback */}
@@ -203,7 +210,7 @@ export default function HomePage() {
         </Suspense>
       </section>
 
-      {/* Shop by vehicle make — static for now */}
+      {/* Shop by vehicle make — static */}
       <section className="bg-gray-50 border-y border-line">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-8">
           <h2 className="font-display text-2xl text-gray-900 mb-4">Shop by Vehicle Make</h2>

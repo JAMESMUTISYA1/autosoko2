@@ -12,6 +12,7 @@ import CountryCodeSelect from "@/components/CountryCodeSelect";
 import { countries } from "@/data/countries";
 import { loginSchema, validate } from "@/lib/validation/authSchemas";
 import { useToast } from "@/contexts/ToastContext";
+import { normalizePhone } from "@/lib/phone"; // ✅ added
 
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_SECONDS = 30;
@@ -21,7 +22,6 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const toast = useToast();
 
-  // Login mode – "email" or "phone"
   const [mode, setMode] = useState("email");
   const [email, setEmail] = useState("");
   const [countryCode, setCountryCode] = useState("KE");
@@ -39,7 +39,8 @@ function LoginForm() {
   function getIdentifier() {
     if (mode === "email") return email;
     const dial = countries.find((c) => c.iso === countryCode)?.dial || "";
-    return `+${dial}${nationalNumber}`;
+    const rawPhone = `+${dial}${nationalNumber}`;
+    return normalizePhone(rawPhone); // ✅ returns "2547..."
   }
 
   async function handleSubmit(e) {
@@ -182,6 +183,16 @@ function LoginForm() {
           />
         </div>
 
+        {/* Forgot password link */}
+        <div className="flex justify-end mt-1">
+          <Link
+            href="/auth/forgot-password"
+            className="text-sm text-blue-500 hover:underline"
+          >
+            Forgot password?
+          </Link>
+        </div>
+
         {formError && !locked && (
           <p className="text-sm text-red-500 font-semibold" role="alert">
             {formError}
@@ -220,8 +231,6 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-
-    
     <Suspense fallback={null}>
       <LoginForm />
     </Suspense>

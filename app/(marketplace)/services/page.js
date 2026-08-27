@@ -2,8 +2,9 @@ export const dynamic = 'force-dynamic';
 
 import Link from "next/link";
 import * as Icons from "lucide-react";
-import { BadgeCheck, MapPin, Star, Home as HomeIcon } from "lucide-react";
+import { BadgeCheck, MapPin, Star, Home as HomeIcon, Wrench, Calendar } from "lucide-react";
 import { formatPrice } from "@/data/sampleData";
+
 function getBaseUrl() {
   if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
@@ -27,73 +28,121 @@ async function loadServicesData() {
   }
 }
 
-const ICON_MAP = { alignment: "GitCommitHorizontal", "general-service": "Wrench", "mobile-mechanic": "Truck", diagnostics: "Activity" };
+const ICON_MAP = {
+  alignment: "GitCommitHorizontal",
+  "general-service": "Wrench",
+  "mobile-mechanic": "Truck",
+  diagnostics: "Activity",
+};
 
 export default async function ServicesPage() {
   const { serviceTypes, mechanics } = await loadServicesData();
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-10">
-      <h1 className="font-display text-2xl mb-1">Services</h1>
-      <p className="text-sm text-muted mb-8 max-w-xl">
-        Book alignment, servicing, and diagnostics with vetted providers — at their workshop or at your home.
-      </p>
+    <div className="min-h-screen bg-white">
+      {/* Hero */}
+      <section className="bg-blue-600 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 md:py-16">
+          <span className="inline-flex items-center gap-1 bg-yellow-400 text-blue-900 text-xs font-bold px-3 py-1 rounded-full">
+            <Wrench size={14} />
+            AUTO SERVICES
+          </span>
+          <h1 className="font-display text-3xl sm:text-4xl md:text-5xl mt-3 leading-tight">
+            Vehicle Services & Mechanics
+          </h1>
+          <p className="mt-3 text-blue-100 text-base md:text-lg max-w-xl">
+            Book alignment, servicing, and diagnostics with vetted providers —
+            at their workshop or at your home.
+          </p>
+        </div>
+      </section>
 
-      {serviceTypes.length === 0 ? (
-        <p className="text-sm text-muted mb-14">No service types configured yet.</p>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-14">
-          {serviceTypes.map((s) => {
-            const Icon = Icons[ICON_MAP[s.slug]] || Icons.Wrench;
-            return (
-              <div key={s.id} className="border border-line rounded-md p-5 flex flex-col">
-                <div className="w-10 h-10 rounded-full bg-bg flex items-center justify-center mb-3">
-                  <Icon size={18} />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
+        {/* Service Types */}
+        <h2 className="font-display text-2xl text-gray-900 mb-6">Book a Service</h2>
+        {serviceTypes.length === 0 ? (
+          <div className="border border-dashed border-gray-300 bg-gray-50 rounded-lg p-10 text-center mb-14">
+            <Wrench size={32} className="mx-auto mb-3 text-gray-300" />
+            <p className="text-sm text-gray-500">No service types configured yet. Check back soon.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-14">
+            {serviceTypes.map((s) => {
+              const Icon = Icons[ICON_MAP[s.slug]] || Icons.Wrench;
+              return (
+                <div
+                  key={s.id}
+                  className="bg-white border border-gray-200 rounded-lg shadow-sm p-5 flex flex-col hover:border-blue-500 hover:shadow-md transition-all"
+                >
+                  <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-4">
+                    <Icon size={22} />
+                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-1">{s.name}</h3>
+                  <p className="text-sm text-gray-600 flex-1">{s.description}</p>
+                  <div className="flex items-center justify-between mt-4">
+                    <span className="text-xs text-gray-500">
+                      From <span className="font-mono text-gray-900">{formatPrice(s.priceFromMinor, "KES")}</span>
+                    </span>
+                    <Link
+                      href={`/services/book?type=${s.id}`}
+                      className="bg-yellow-400 hover:bg-yellow-500 text-blue-900 text-sm font-semibold px-4 py-2 rounded-md transition-colors"
+                    >
+                      Book
+                    </Link>
+                  </div>
                 </div>
-                <h2 className="font-display text-base mb-1">{s.name}</h2>
-                <p className="text-sm text-muted flex-1">{s.description}</p>
-                <div className="flex items-center justify-between mt-4">
-                  <span className="text-xs text-muted">
-                    From <span className="font-mono text-fg">{formatPrice(s.priceFromMinor, "KES")}</span>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Mechanics Directory */}
+        <h2 className="font-display text-2xl text-gray-900 mb-6">Find a Mechanic</h2>
+        {mechanics.length === 0 ? (
+          <div className="border border-dashed border-gray-300 bg-gray-50 rounded-lg p-10 text-center">
+            <Wrench size={32} className="mx-auto mb-3 text-gray-300" />
+            <p className="text-sm text-gray-500">No mechanics listed yet.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {mechanics.map((m) => (
+              <div
+                key={m.id}
+                className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm hover:border-blue-500 hover:shadow-md transition-all"
+              >
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-gray-900">{m.name}</h3>
+                  {m.verified && <BadgeCheck size={14} className="text-blue-500" />}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">{(m.specialties || []).join(" · ")}</p>
+                <div className="flex items-center gap-3 text-xs text-gray-500 mt-2">
+                  <span className="flex items-center gap-1">
+                    <Star size={11} className="fill-yellow-400 text-yellow-400" />
+                    {m.ratingAvg} ({m.ratingCount})
                   </span>
-                  <Link href={`/services/book?type=${s.id}`} className="bg-accent text-white text-sm font-semibold px-4 py-2 rounded-sm hover:bg-accent/90 transition-colors">
-                    Book Appointment
-                  </Link>
+                  {m.town?.name && (
+                    <span className="flex items-center gap-1">
+                      <MapPin size={11} />
+                      {m.town.name}
+                    </span>
+                  )}
                 </div>
+                {m.mobileAvailable && (
+                  <span className="flex items-center gap-1 text-[11px] text-gray-500 mt-1.5">
+                    <HomeIcon size={11} /> Available for home visits
+                  </span>
+                )}
+                <Link
+                  href={`/services/book?mechanic=${m.id}`}
+                  className="block text-center bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 rounded-md mt-4 transition-colors"
+                >
+                  Book
+                </Link>
               </div>
-            );
-          })}
-        </div>
-      )}
-
-      <h2 className="font-display text-xl mb-1">Find a Mechanic</h2>
-      <p className="text-sm text-muted mb-6">Browse vetted mechanics and garages near you.</p>
-
-      {mechanics.length === 0 ? (
-        <p className="text-sm text-muted">No mechanics listed yet.</p>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {mechanics.map((m) => (
-            <div key={m.id} className="border border-line rounded-md p-4">
-              <div className="flex items-center gap-1.5">
-                <h3 className="text-sm font-medium">{m.name}</h3>
-                {m.verified && <BadgeCheck size={13} className="text-fg shrink-0" />}
-              </div>
-              <p className="text-xs text-muted mt-1">{(m.specialties || []).join(" · ")}</p>
-              <div className="flex items-center gap-3 text-xs text-muted mt-2">
-                <span className="flex items-center gap-1"><Star size={11} className="fill-fg text-fg" />{m.ratingAvg} ({m.ratingCount})</span>
-                {m.town?.name && <span className="flex items-center gap-1"><MapPin size={11} />{m.town.name}</span>}
-              </div>
-              {m.mobileAvailable && (
-                <span className="flex items-center gap-1 text-[11px] text-muted mt-1.5"><HomeIcon size={11} /> Available for home visits</span>
-              )}
-              <Link href={`/services/book?mechanic=${m.id}`} className="block text-center border border-fg text-sm font-medium py-2 rounded-sm mt-3 hover:bg-fg hover:text-bg transition-colors">
-                Book
-              </Link>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

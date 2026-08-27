@@ -20,12 +20,12 @@ import SearchBar from "@/components/search/SearchBar";
 import { useSession, signOut } from "next-auth/react";
 
 const NAV_LINKS = [
-  { label: "Shop by Vehicle", href: "/search?mode=vehicle" },
-  { label: "Categories", href: "/search" },
+  { label: "Home", href: "/" },
+  { label: "Parts / Accessories", href: "/search" },
   { label: "Part Radar", href: "/part-radar" },
   { label: "Services", href: "/services" },
   { label: "Sell on AutoSoko", href: "/seller/listings/new" },
-  { label: "Business Accounts", href: "/business" },
+  { label: "Orders", href: "/account/orders" },
   { label: "Contact Us", href: "/contact" },
 ];
 

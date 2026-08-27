@@ -1,12 +1,11 @@
-
 "use client";
-export const dynamic = 'force-dynamic';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Loader2, ShieldCheck } from "lucide-react";
+import { z } from "zod";
 import PasswordInput from "@/components/PasswordInput";
 import GoogleSignInButton from "@/components/GoogleSignInButton";
 import CountryCodeSelect from "@/components/CountryCodeSelect";
@@ -26,6 +25,11 @@ function passwordStrength(password) {
 const STRENGTH_LABEL = ["Too short", "Weak", "Fair", "Good", "Strong"];
 const STRENGTH_COLOR = ["bg-gray-300", "bg-gray-400", "bg-gray-500", "bg-gray-700", "bg-gray-900"];
 
+// Phone-only schema for the "Send OTP" button
+const phoneOnlySchema = z.object({
+  phone: z.string().regex(/^\+?[1-9]\d{7,14}$/, "Enter a valid phone number"),
+});
+
 export default function RegisterPage() {
   const router = useRouter();
   const toast = useToast();
@@ -36,55 +40,92 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const [fieldErrors, setFieldErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
   const strength = passwordStrength(password);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
 
   function getFullPhone() {
     const dial = countries.find((c) => c.iso === countryCode)?.dial || "";
     return `+${dial}${nationalNumber}`;
   }
 
+  async function handleSendOtp() {
+    const phone = getFullPhone();
+
+    // Use the phone-only Zod schema
+    const { success, fieldErrors: errs } = validate(phoneOnlySchema, { phone });
+    setFieldErrors(errs || {});
+    if (!success) return;
+
+    setSendingOtp(true);
+    try {
+      const res = await fetch("/api/v1/auth/otp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        toast.error(json.error?.message || "Could not send OTP");
+        return;
+      }
+      setOtpSent(true);
+      setResendCooldown(30);
+      toast.success("Verification code sent");
+    } catch {
+      toast.error("Network error. Please try again.");
+    } finally {
+      setSendingOtp(false);
+    }
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
-
     const phone = getFullPhone();
+
+    // Full registration validation (make sure registerSchema includes `otp`)
     const { success, fieldErrors: errs } = validate(registerSchema, {
       fullName,
       phone,
       password,
       confirmPassword,
       agreeToTerms,
+      otp,
     });
-    setFieldErrors(errs);
+    setFieldErrors(errs || {});
     if (!success) return;
 
     setSubmitting(true);
-    let response;
     try {
-      response = await fetch("/api/v1/auth/register", {
+      const res = await fetch("/api/v1/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName, phone, password }),
+        body: JSON.stringify({ fullName, phone, password, otp }),
       });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        if (json.error?.fields) setFieldErrors(json.error.fields);
+        toast.error(json.error?.message || "Registration failed");
+        return;
+      }
+      toast.success("Account created successfully!");
+      router.push("/auth/login?verified=1");
     } catch {
+      toast.error("Network error. Please try again.");
+    } finally {
       setSubmitting(false);
-      toast.error("Couldn't reach the server. Check your connection and try again.");
-      return;
     }
-
-    const json = await response.json().catch(() => null);
-    setSubmitting(false);
-
-    if (!response.ok || !json?.success) {
-      if (json?.error?.fields) setFieldErrors(json.error.fields);
-      toast.error(json?.error?.message || "Something went wrong. Please try again.");
-      return;
-    }
-
-    toast.success("Account created. Verify your phone to continue.");
-    router.push(`/auth/verify-otp?phone=${encodeURIComponent(phone)}`);
   }
 
   return (
@@ -123,7 +164,7 @@ export default function RegisterPage() {
           )}
         </div>
 
-        {/* Phone Number with country code */}
+        {/* Phone Number with OTP send button */}
         <div>
           <label htmlFor="phone" className="block text-xs text-gray-500 mb-1.5">Phone Number</label>
           <div className="flex gap-2">
@@ -138,16 +179,47 @@ export default function RegisterPage() {
               placeholder="712345678"
               value={nationalNumber}
               onChange={(e) => setNationalNumber(e.target.value)}
-              aria-invalid={!!fieldErrors.phone}
+              disabled={otpSent}
               className={`flex-1 border rounded-sm px-3 py-2.5 text-sm bg-white text-gray-900 focus:outline-none focus:border-blue-500 ${
                 fieldErrors.phone ? "border-red-500" : "border-gray-300"
-              }`}
+              } disabled:bg-gray-100 disabled:text-gray-500`}
             />
+            <button
+              type="button"
+              onClick={handleSendOtp}
+              disabled={sendingOtp || otpSent || resendCooldown > 0}
+              className="shrink-0 bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white text-xs font-semibold px-3 py-2 rounded-sm"
+            >
+              {sendingOtp ? "Sending..." : otpSent ? (resendCooldown > 0 ? `${resendCooldown}s` : "Resend") : "Send OTP"}
+            </button>
           </div>
           {fieldErrors.phone && (
             <p className="text-xs text-red-500 font-semibold mt-1">{fieldErrors.phone}</p>
           )}
         </div>
+
+        {/* OTP Input (visible only after OTP sent) */}
+        {otpSent && (
+          <div>
+            <label htmlFor="otp" className="block text-xs text-gray-500 mb-1.5">Verification Code</label>
+            <input
+              id="otp"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              value={otp}
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+              placeholder="6-digit code"
+              className={`w-full border rounded-sm px-3 py-2.5 text-sm bg-white text-gray-900 focus:outline-none focus:border-blue-500 ${
+                fieldErrors.otp ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            {fieldErrors.otp && (
+              <p className="text-xs text-red-500 font-semibold mt-1">{fieldErrors.otp}</p>
+            )}
+          </div>
+        )}
 
         {/* Password */}
         <div>
@@ -212,7 +284,7 @@ export default function RegisterPage() {
         {/* Submit */}
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || !otpSent || otp.length !== 6}
           className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-60 transition-colors text-white font-semibold text-sm py-3 rounded-sm"
         >
           {submitting && <Loader2 size={16} className="animate-spin" />}

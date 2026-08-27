@@ -13,19 +13,23 @@ const createOrderSchema = z.object({
     )
     .min(1),
   shippingAddressId: z.string().uuid().optional(),
-  deliveryMethod: z.enum(["pickup", "courier", "cross_border"]),
+  // Keep old field for backward compatibility (optional)
+  deliveryMethod: z.enum(["pickup", "courier", "cross_border"]).optional(),
+  // New fields
+  deliveryMethodId: z.string().uuid().optional(),
+  customDelivery: z
+    .object({
+      address: z.string().trim().min(5),
+      explanation: z.string().trim().min(1),
+    })
+    .optional(),
 });
 
 function generateOrderNumber(businessId) {
-  // Human-readable, sequential-looking per business — real sequencing
-  // would use a DB sequence scoped per business; this is a placeholder
-  // scheme good enough until that's built.
   return `AS-${businessId.slice(0, 4).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
 }
 
-// GET /api/v1/orders — buyer's own order history (implied alongside
-// Document 3 §6.2's order-detail endpoint). Scoped to the session user
-// by construction — there's no way to pass a different buyerId in.
+// GET /api/v1/orders — buyer's own order history (unchanged)
 export async function GET(request) {
   const session = await getSession();
   if (!session?.user) return unauthorized();
@@ -59,7 +63,7 @@ export async function GET(request) {
   return Response.json({ success: true, data: orders, meta: { page, perPage, total } });
 }
 
-// POST /api/v1/orders — Document 3 §6.1
+// POST /api/v1/orders — updated to accept deliveryMethodId/customDelivery
 export async function POST(request) {
   const session = await getSession();
   if (!session?.user) return unauthorized();
@@ -73,13 +77,6 @@ export async function POST(request) {
     );
   }
 
-  // Idempotency: a double-tapped "Place Order" on a slow connection (a
-  // real scenario in this market, per Document 3's cross-cutting notes)
-  // must not create two orders. The client sends the same key on retry;
-  // we short-circuit to the original result instead of creating a
-  // duplicate. A real implementation persists this in Redis with a TTL —
-  // sketched here, not fully wired, since it needs its own storage
-  // decision (Upstash again, most likely) that's out of scope for this pass.
   const idempotencyKey = request.headers.get("Idempotency-Key");
 
   let body;
@@ -102,10 +99,51 @@ export async function POST(request) {
     );
   }
 
-  const { items, shippingAddressId, deliveryMethod } = parsed.data;
+  const { items, shippingAddressId, deliveryMethod: legacyDeliveryMethod, deliveryMethodId, customDelivery } = parsed.data;
 
-  // Fetch products to know price/business per item and to split a
-  // multi-seller cart into one order per business (Document 3 §6.1).
+  // Determine delivery details: method enum, shipping fee, and notes
+  let finalDeliveryMethod = legacyDeliveryMethod || "courier"; // default to courier
+  let shippingFeeMinor = 0;
+  let deliveryNotes = "";
+
+  if (customDelivery) {
+    // Custom delivery: no fee, use courier as fallback, store details as JSON in notes
+    finalDeliveryMethod = "courier";
+    deliveryNotes = JSON.stringify({
+      type: "custom",
+      address: customDelivery.address,
+      explanation: customDelivery.explanation,
+    });
+  } else if (deliveryMethodId) {
+    // Predefined delivery method from DeliveryMethod table
+    const method = await db.deliveryMethod.findUnique({
+      where: { id: deliveryMethodId },
+      select: { method: true, feeMinor: true, provider: true },
+    });
+    if (!method) {
+      return Response.json(
+        { success: false, error: { code: "INVALID_DELIVERY_METHOD", message: "Selected delivery method not found" } },
+        { status: 400 }
+      );
+    }
+    shippingFeeMinor = method.feeMinor;
+    // Map method string to OrderStatus enum
+    if (method.method.toLowerCase().includes("pickup")) {
+      finalDeliveryMethod = "pickup";
+    } else if (method.method.toLowerCase().includes("cross border")) {
+      finalDeliveryMethod = "cross_border";
+    } else {
+      finalDeliveryMethod = "courier"; // includes "Courier", "Boda-boda", etc.
+    }
+    deliveryNotes = JSON.stringify({
+      type: "predefined",
+      method: method.method,
+      provider: method.provider,
+      feeMinor: method.feeMinor,
+    });
+  }
+
+  // Fetch products to know price/business per item and to split a multi-seller cart
   const productIds = items.map((i) => i.productId);
   const products = await db.product.findMany({
     where: { id: { in: productIds }, deletedAt: null, status: "active" },
@@ -121,8 +159,7 @@ export async function POST(request) {
     );
   }
 
-  // Group requested items by seller — a cart spanning multiple
-  // businesses becomes multiple orders, created in one DB transaction.
+  // Group requested items by seller
   const itemsByBusiness = new Map();
   for (const item of items) {
     const product = productById.get(item.productId);
@@ -135,22 +172,13 @@ export async function POST(request) {
       const results = [];
 
       for (const [businessId, businessItems] of itemsByBusiness) {
-        // The critical safety property: atomically decrement stock only
-        // if enough is available. `updateMany`'s WHERE clause is
-        // evaluated as part of the same atomic UPDATE, so Postgres's
-        // row-level locking makes this safe under concurrent checkout
-        // without needing an explicit SELECT...FOR UPDATE — verified
-        // equivalent to that pattern against real Postgres before this
-        // route was written (see prisma/validation_ddl.sql's test).
+        // Atomic stock decrement
         for (const item of businessItems) {
           const result = await tx.product.updateMany({
             where: { id: item.productId, stockQuantity: { gte: item.quantity } },
             data: { stockQuantity: { decrement: item.quantity } },
           });
           if (result.count === 0) {
-            // Throwing inside $transaction rolls back everything already
-            // done in this call, including stock already decremented
-            // for earlier items in the loop — all-or-nothing.
             throw new InsufficientStockError(item.productId, item.product.name);
           }
         }
@@ -160,6 +188,7 @@ export async function POST(request) {
           0
         );
         const currency = businessItems[0].product.currency;
+        const totalMinor = subtotalMinor + shippingFeeMinor;
 
         const order = await tx.order.create({
           data: {
@@ -167,10 +196,12 @@ export async function POST(request) {
             businessId,
             orderNumber: generateOrderNumber(businessId),
             subtotalMinor,
-            totalMinor: subtotalMinor, // shipping/tax added once those rules are wired up
+            shippingMinor: shippingFeeMinor,
+            totalMinor,
             currency,
             shippingAddressId,
-            deliveryMethod,
+            deliveryMethod: finalDeliveryMethod,
+            notes: deliveryNotes || undefined,
             items: {
               create: businessItems.map((i) => ({
                 productId: i.productId,

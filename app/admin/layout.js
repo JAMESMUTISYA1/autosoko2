@@ -1,3 +1,6 @@
+"use client";
+
+import { usePathname } from "next/navigation";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import { CURRENT_ADMIN } from "@/data/adminData";
 
@@ -16,6 +19,13 @@ const ADMIN_NAV = [
 ];
 
 export default function AdminLayout({ children }) {
+  const pathname = usePathname();
+  const isAuthPage = pathname === "/admin/login" || pathname === "/admin/forgot-password";
+
+  if (isAuthPage) {
+    return <>{children}</>;
+  }
+
   return (
     <DashboardShell
       navItems={ADMIN_NAV}
