@@ -155,6 +155,7 @@ model Business {
   payoutMethod      PayoutMethod?
   withdrawalRequests WithdrawalRequest[]
   partRequestResponses PartRequestResponse[]
+  sponsorships      ProductSponsorship[]
 
   @@index([countryId])
   @@index([verificationStatus])
@@ -427,6 +428,7 @@ model Product {
   cartItems     CartItem[]
   wishlists     Wishlist[]
   conversations Conversation[]
+  sponsorships  ProductSponsorship[]
 
   @@unique([businessId, slug])
   @@index([businessId])
@@ -550,6 +552,7 @@ model Order {
   items           OrderItem[]
   statusHistory   OrderStatusHistory[]
   payments        Payment[]
+  payoutLinks     OrderPayout[]       // NEW
 
   @@index([businessId, status])
   @@index([buyerId])
@@ -1019,9 +1022,24 @@ model WithdrawalRequest {
 
   business  Business @relation(fields: [businessId], references: [id])
   processor User?    @relation(fields: [processedBy], references: [id])
+  payoutLinks OrderPayout[] // NEW
 
   @@index([status])
   @@map("withdrawal_requests")
+}
+
+// New join table for order-level payout traceability
+model OrderPayout {
+  orderId             String   @map("order_id")
+  withdrawalRequestId String   @map("withdrawal_request_id")
+  amountMinor         Int      @map("amount_minor") // portion of order covered
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  order             Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  withdrawalRequest WithdrawalRequest @relation(fields: [withdrawalRequestId], references: [id], onDelete: Cascade)
+
+  @@id([orderId, withdrawalRequestId])
+  @@map("order_payouts")
 }
 
 // ============================================================
@@ -1119,4 +1137,61 @@ model OtpCode {
 
   @@index([phone, expiresAt])
   @@map("otp_codes")
+}
+
+
+enum SponsorshipStatus {
+  requested   // seller submitted, no price yet
+  quoted      // admin set a price + duration, awaiting payment
+  active      // payment verified, boost is live
+  expired     // endAt has passed
+  rejected    // admin declined
+  cancelled   // seller withdrew before payment
+}
+
+model ProductSponsorship {
+  id         String            @id @default(uuid())
+  productId  String            @map("product_id")
+  businessId String            @map("business_id")
+  status     SponsorshipStatus @default(requested)
+
+  // The seller's ask
+  requestedBy String   @map("requested_by") // business member (User.id) who requested it
+  requestNote String?  @map("request_note")
+  requestedAt DateTime @default(now()) @map("requested_at")
+
+  // The admin's quote — set once, moving requested -> quoted
+  amountMinor  Int?      @map("amount_minor")
+  currency     String    @default("KES")
+  durationDays Int?      @map("duration_days")
+  quotedBy     String?   @map("quoted_by")
+  quotedAt     DateTime? @map("quoted_at")
+  quoteNote    String?   @map("quote_note")
+
+  // The admin's payment confirmation — moving quoted -> active
+  paymentVerifiedBy String?   @map("payment_verified_by")
+  paymentVerifiedAt DateTime? @map("payment_verified_at")
+
+  // Computed once active
+  startAt DateTime? @map("start_at")
+  endAt   DateTime? @map("end_at")
+
+  // Terminal-state bookkeeping
+  rejectedBy      String?   @map("rejected_by")
+  rejectedAt      DateTime? @map("rejected_at")
+  rejectionReason String?   @map("rejection_reason")
+  cancelledBy     String?   @map("cancelled_by")
+  cancelledAt     DateTime? @map("cancelled_at")
+  cancelReason    String?   @map("cancel_reason")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id])
+
+  @@index([productId])
+  @@index([businessId])
+  @@index([status])
+  @@map("product_sponsorships")
 }

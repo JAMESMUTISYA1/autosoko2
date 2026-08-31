@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 import * as Icons from "lucide-react";
 import { Menu, X, LogOut } from "lucide-react";
 
@@ -10,7 +11,7 @@ export default function DashboardShell({
   navItems,
   roleLabel,
   userName,
-  userMeta, // e.g. assigned city, shown under the name
+  userMeta,
   children,
 }) {
   const pathname = usePathname();
@@ -27,6 +28,12 @@ export default function DashboardShell({
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [mobileOpen]);
+
+  // Determine sign-out redirect based on role
+  function handleSignOut() {
+    const callbackUrl = roleLabel.toLowerCase() === "admin" ? "/admin/login" : "/auth/login";
+    signOut({ callbackUrl });
+  }
 
   return (
     <div className="min-h-screen flex bg-bg text-fg">
@@ -63,7 +70,10 @@ export default function DashboardShell({
         </nav>
 
         <div className="px-3 py-4 border-t border-line">
-          <button className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-muted hover:text-fg transition-colors">
+          <button
+            onClick={handleSignOut}
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-muted hover:text-fg transition-colors"
+          >
             <LogOut size={16} />
             Sign Out
           </button>
@@ -80,7 +90,7 @@ export default function DashboardShell({
         <Menu size={22} />
       </button>
 
-      {/* Mobile drawer — floating overlay, not inline */}
+      {/* Mobile drawer — floating overlay */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div
@@ -121,6 +131,18 @@ export default function DashboardShell({
                 );
               })}
             </nav>
+            <div className="px-3 py-4 border-t border-line">
+              <button
+                onClick={() => {
+                  setMobileOpen(false);
+                  handleSignOut();
+                }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-muted hover:text-fg transition-colors"
+              >
+                <LogOut size={16} />
+                Sign Out
+              </button>
+            </div>
           </aside>
         </div>
       )}

@@ -1,61 +1,121 @@
-import { z } from "zod";
 import { db } from "@/lib/db";
-import { requirePlatformRole, forbidden } from "@/lib/auth/rbac";
 
-// GET /api/v1/admin/delivery-methods?townId=...
+// GET /api/v1/admin/delivery-methods?townId=&active=&search=&page=&perPage=
+//
+// A town can have any number of delivery methods (Nakuru might have
+// "Delivery by 2NK Sacco" AND "Delivery by Boda", Machakos might have
+// "Delivery by Kinatwa Sacco"). `method` and `provider` are plain strings
+// on the DeliveryMethod row scoped to a townId — there's no fixed list to
+// keep in sync anywhere.
 export async function GET(request) {
-  const { allowed } = await requirePlatformRole("agent");
-  if (!allowed) return forbidden();
+  try {
+    const { searchParams } = new URL(request.url);
+    const townId = searchParams.get("townId");
+    const activeParam = searchParams.get("active");
+    const search = searchParams.get("search")?.trim();
+    const page = Math.max(1, Number(searchParams.get("page")) || 1);
+    const perPage = Math.min(100, Math.max(1, Number(searchParams.get("perPage")) || 20));
 
-  const { searchParams } = new URL(request.url);
-  const townId = searchParams.get("townId");
+    const where = {
+      ...(townId ? { townId } : {}),
+      ...(activeParam === "true" ? { active: true } : {}),
+      ...(activeParam === "false" ? { active: false } : {}),
+      ...(search
+        ? {
+            OR: [
+              { method: { contains: search, mode: "insensitive" } },
+              { provider: { contains: search, mode: "insensitive" } },
+              { town: { name: { contains: search, mode: "insensitive" } } },
+            ],
+          }
+        : {}),
+    };
 
-  const methods = await db.deliveryMethod.findMany({
-    where: townId ? { townId } : {},
-    select: {
-      id: true, townId: true, method: true, provider: true, etaDays: true, feeMinor: true, active: true,
-      town: { select: { name: true } },
-      adder: { select: { fullName: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+    const [methods, total] = await Promise.all([
+      db.deliveryMethod.findMany({
+        where,
+        include: {
+          town: { include: { region: { select: { name: true } } } },
+          adder: { select: { id: true, fullName: true } },
+        },
+        orderBy: [{ town: { name: "asc" } }, { createdAt: "desc" }],
+        skip: (page - 1) * perPage,
+        take: perPage,
+      }),
+      db.deliveryMethod.count({ where }),
+    ]);
 
-  return Response.json({
-    success: true,
-    data: methods.map((m) => ({ ...m, addedBy: m.adder?.fullName || null })),
-  });
+    return Response.json({
+      success: true,
+      data: methods,
+      meta: { page, perPage, total, totalPages: Math.max(1, Math.ceil(total / perPage)) },
+    });
+  } catch (error) {
+    console.error("Failed to fetch delivery methods:", error);
+    return Response.json(
+      { success: false, error: { code: "SERVER_ERROR", message: "Could not load delivery methods." } },
+      { status: 500 }
+    );
+  }
 }
 
-const createSchema = z.object({
-  townId: z.string().uuid(),
-  method: z.string().min(2),
-  provider: z.string().min(1),
-  etaDays: z.number().int().min(0),
-  feeMinor: z.number().int().min(0),
-});
-
 // POST /api/v1/admin/delivery-methods
+// { townId, method, provider, etaDays, feeMinor, active? }
 export async function POST(request) {
-  const { session, allowed } = await requirePlatformRole("agent");
-  if (!allowed) return forbidden();
-
-  let body;
   try {
-    body = await request.json();
-  } catch {
-    return Response.json({ success: false, error: { code: "VALIDATION_ERROR" } }, { status: 400 });
-  }
-  const parsed = createSchema.safeParse(body);
-  if (!parsed.success) {
-    const fields = {};
-    for (const issue of parsed.error.issues) fields[issue.path[0]] = issue.message;
-    return Response.json({ success: false, error: { code: "VALIDATION_ERROR", fields } }, { status: 400 });
-  }
+    const body = await request.json();
+    const { townId, method, provider, etaDays, feeMinor, active } = body;
 
-  const method = await db.deliveryMethod.create({
-    data: { ...parsed.data, addedBy: session.user.id },
-    select: { id: true, method: true, provider: true },
-  });
+    if (
+      !townId ||
+      !method?.trim() ||
+      !provider?.trim() ||
+      etaDays === undefined ||
+      etaDays === null ||
+      etaDays === "" ||
+      feeMinor === undefined ||
+      feeMinor === null ||
+      feeMinor === ""
+    ) {
+      return Response.json(
+        {
+          success: false,
+          error: { code: "VALIDATION_ERROR", message: "Town, method name, provider, ETA and fee are required." },
+        },
+        { status: 422 }
+      );
+    }
 
-  return Response.json({ success: true, data: method }, { status: 201 });
+    const town = await db.town.findUnique({ where: { id: townId } });
+    if (!town) {
+      return Response.json(
+        { success: false, error: { code: "NOT_FOUND", message: "Town not found." } },
+        { status: 404 }
+      );
+    }
+
+    const delivery = await db.deliveryMethod.create({
+      data: {
+        townId,
+        method: method.trim(),
+        provider: provider.trim(),
+        etaDays: Number(etaDays),
+        feeMinor: Number(feeMinor),
+        active: active === undefined ? true : Boolean(active),
+        addedBy: null, // TODO: stamp with the signed-in admin once auth is wired back in
+      },
+      include: {
+        town: { include: { region: { select: { name: true } } } },
+        adder: { select: { id: true, fullName: true } },
+      },
+    });
+
+    return Response.json({ success: true, data: delivery }, { status: 201 });
+  } catch (error) {
+    console.error("Failed to create delivery method:", error);
+    return Response.json(
+      { success: false, error: { code: "SERVER_ERROR", message: "Could not create delivery method." } },
+      { status: 500 }
+    );
+  }
 }

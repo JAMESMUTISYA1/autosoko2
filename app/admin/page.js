@@ -1,16 +1,58 @@
 import { Users, ShieldCheck, Package, MapPin } from "lucide-react";
 import StatCard from "@/components/dashboard/StatCard";
-import { getAgents, getPendingVerifications, getAgentOrders, cityName, cities } from "@/data/adminData";
+import { db } from "@/lib/db";
 
 export default async function AdminOverviewPage() {
-  const [agents, verifications, orders] = await Promise.all([
-    getAgents(),
-    getPendingVerifications(),
-    getAgentOrders(),
-  ]);
+  // Fetch agents: users with platform role "Agent"
+  const agents = await db.user.findMany({
+    where: {
+      userRoles: {
+        some: {
+          role: { name: "Agent", scope: "platform" },
+        },
+      },
+    },
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+      phone: true,
+      status: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
 
+  // Pending business verifications
+  const pendingVerifications = await db.business.findMany({
+    where: { verificationStatus: "pending" },
+    select: {
+      id: true,
+      name: true,
+      businessType: true,
+      town: { select: { name: true } },
+      createdAt: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  // Orders in progress (not delivered, cancelled, refunded, or disputed)
+  const ordersInProgress = await db.order.findMany({
+    where: {
+      status: { in: ["pending", "confirmed", "processing", "shipped"] },
+    },
+    select: { id: true },
+  });
+
+  // Count active agents
+  const totalAgents = agents.length;
   const activeAgents = agents.filter((a) => a.status === "active").length;
-  const citiesCovered = new Set(agents.map((a) => a.cityId)).size;
+
+  // Cities covered = distinct towns of all businesses
+  const businessesTowns = await db.business.findMany({
+    select: { townId: true },
+    distinct: ["townId"],
+  });
+  const citiesCovered = businessesTowns.filter((b) => b.townId).length;
 
   return (
     <div>
@@ -20,24 +62,45 @@ export default async function AdminOverviewPage() {
       </p>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-        <StatCard label="Active Agents" value={activeAgents} icon={Users} sublabel={`${agents.length} total`} />
-        <StatCard label="Cities Covered" value={citiesCovered} icon={MapPin} sublabel={`of ${cities.length} target cities`} />
-        <StatCard label="Pending Verifications" value={verifications.length} icon={ShieldCheck} />
-        <StatCard label="Orders In Progress" value={orders.length} icon={Package} />
+        <StatCard
+          label="Active Agents"
+          value={activeAgents}
+          icon={Users}
+          sublabel={`${totalAgents} total`}
+        />
+        <StatCard
+          label="Cities Covered"
+          value={citiesCovered}
+          icon={MapPin}
+          sublabel="across all businesses"
+        />
+        <StatCard
+          label="Pending Verifications"
+          value={pendingVerifications.length}
+          icon={ShieldCheck}
+        />
+        <StatCard
+          label="Orders In Progress"
+          value={ordersInProgress.length}
+          icon={Package}
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Agents List */}
         <div className="bg-card border border-line rounded-md">
           <div className="px-5 py-4 border-b border-line flex items-center justify-between">
-            <h2 className="font-display text-base">Agents by City</h2>
-            <a href="/admin/agents" className="text-xs text-muted hover:text-fg">View all →</a>
+            <h2 className="font-display text-base">Agents</h2>
+            <a href="/admin/agents" className="text-xs text-muted hover:text-fg">
+              View all →
+            </a>
           </div>
           <ul className="divide-y divide-line">
             {agents.slice(0, 5).map((agent) => (
               <li key={agent.id} className="px-5 py-3 flex items-center justify-between text-sm">
                 <div>
-                  <p className="font-medium">{agent.name}</p>
-                  <p className="text-xs text-muted">{cityName(agent.cityId)}</p>
+                  <p className="font-medium">{agent.fullName}</p>
+                  <p className="text-xs text-muted">{agent.email || agent.phone}</p>
                 </div>
                 <span
                   className={`text-[11px] px-2 py-1 rounded-sm border ${
@@ -48,24 +111,39 @@ export default async function AdminOverviewPage() {
                 </span>
               </li>
             ))}
+            {agents.length === 0 && (
+              <li className="px-5 py-3 text-sm text-muted">No agents yet.</li>
+            )}
           </ul>
         </div>
 
+        {/* Pending Verifications List */}
         <div className="bg-card border border-line rounded-md">
           <div className="px-5 py-4 border-b border-line flex items-center justify-between">
             <h2 className="font-display text-base">Recent Verification Requests</h2>
-            <a href="/admin/verifications" className="text-xs text-muted hover:text-fg">View all →</a>
+            <a href="/admin/verifications" className="text-xs text-muted hover:text-fg">
+              View all →
+            </a>
           </div>
           <ul className="divide-y divide-line">
-            {verifications.slice(0, 5).map((v) => (
+            {pendingVerifications.slice(0, 5).map((v) => (
               <li key={v.id} className="px-5 py-3 flex items-center justify-between text-sm">
                 <div>
                   <p className="font-medium">{v.name}</p>
-                  <p className="text-xs text-muted">{v.type} · {cityName(v.cityId)}</p>
+                  <p className="text-xs text-muted">
+                    {v.businessType} · {v.town?.name || "No town"}
+                  </p>
                 </div>
-                <span className="text-xs text-muted">{v.submittedAt}</span>
+                <span className="text-xs text-muted">
+                  {new Date(v.createdAt).toLocaleDateString()}
+                </span>
               </li>
             ))}
+            {pendingVerifications.length === 0 && (
+              <li className="px-5 py-3 text-sm text-muted">
+                No pending verification requests.
+              </li>
+            )}
           </ul>
         </div>
       </div>

@@ -4,23 +4,21 @@ import Google from "next-auth/providers/google";
 import { db } from "@/lib/db";
 import { verifyPassword } from "@/lib/auth/password";
 import { checkRateLimit } from "@/lib/auth/rateLimit";
+import { normalizePhone } from "@/lib/phone";
 import { authConfig } from "@/auth.config";
 
-// Full config — used by the actual /api/auth/[...nextauth] route handler
-// and anywhere server-side code needs `auth()`. Extends auth.config.js
-// (the edge-safe subset middleware uses) with the DB-touching pieces:
-// real providers and the jwt callback that looks up the user's role.
-// This split exists specifically so middleware.js never has to import
-// Prisma — see auth.config.js's comment and BACKEND.md for why that
-// matters (Edge Runtime compatibility, and avoiding a DB dependency on
-// every single matched request).
+// Buyer / platform auth — mounted at /api/auth/[...nextauth].
+// Extends auth.config.js (the edge-safe subset middleware uses) with the
+// DB-touching pieces. This session is intentionally separate from the
+// Admin and Seller sessions (see auth.admin.js / auth.seller.js) — logging
+// in here never grants admin or seller access, and vice versa.
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
 
   providers: [
     Credentials({
       credentials: {
-        identifier: { label: "Email or phone" }, // matches Document 3 §1.3
+        identifier: { label: "Email or phone" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials, request) {
@@ -28,26 +26,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const password = credentials?.password?.toString();
         if (!identifier || !password) return null;
 
-        // Rate limit BEFORE touching the database — an unauthenticated
-        // brute-force loop shouldn't get to run a query per attempt.
+        // Rate limit BEFORE touching the database. Two buckets: per-IP
+        // (stops one attacker hammering many accounts) and per-identifier
+        // (stops distributed attempts against one account from many IPs) —
+        // same pattern as the admin/seller portals.
         const ip =
           request?.headers?.get?.("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-        const { success } = await checkRateLimit(`ip:${ip}`, "auth");
-        if (!success) return null; // Auth.js surfaces this as a generic failure — no detail leaked
+        const [ipLimit, idLimit] = await Promise.all([
+          checkRateLimit(`ip:${ip}`, "buyer-auth"),
+          checkRateLimit(`id:${identifier.toLowerCase()}`, "buyer-auth"),
+        ]);
+        if (!ipLimit.success || !idLimit.success) return null;
 
         const isEmail = identifier.includes("@");
+        const lookupValue = isEmail ? identifier.toLowerCase() : normalizePhone(identifier);
+
         const user = await db.user.findUnique({
-          where: isEmail ? { email: identifier } : { phone: identifier },
+          where: isEmail ? { email: lookupValue } : { phone: lookupValue },
         });
 
-        // Constant-shape response whether the account exists or not:
-        // verifyPassword safely returns false for a null hash rather
-        // than short-circuiting before the compare, which is what
-        // actually prevents timing-based account enumeration.
+        // Always run verifyPassword, even with no user, so response timing
+        // doesn't reveal whether the identifier exists.
         const valid = await verifyPassword(password, user?.passwordHash);
         if (!user || !valid) return null;
-
-        if (user.status !== "active") return null; // suspended/banned accounts can't sign in
+        if (user.status !== "active") return null;
 
         return {
           id: user.id,
@@ -67,27 +69,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     ...authConfig.callbacks,
 
-    // Runs on sign-in (and token refresh) — NOT on every middleware
-    // check, which reads the already-encoded token instead (see
-    // auth.config.js). This is the one place the RBAC lookup happens.
     async jwt({ token, user }) {
       if (user) {
         token.userId = user.id;
 
-        // A platform-scope BusinessMember row (scope: "platform" per
-        // Document 2 §4/§5) is what makes someone an agent or admin —
-        // ordinary sellers/buyers have none. This one query at sign-in
-        // is the entire RBAC lookup; everything after reads the JWT.
-        const platformMembership = await db.businessMember.findFirst({
+        const userRoles = await db.userRole.findMany({
           where: { userId: user.id, role: { scope: "platform" } },
-          include: { role: true },
+          select: { role: { select: { name: true } } },
         });
-        token.role = platformMembership?.role.name || "buyer";
+        const platformRoleNames = userRoles.map((ur) => ur.role.name);
+        const primaryRole = platformRoleNames.length > 0 ? platformRoleNames[0] : "buyer";
 
-        // A seller's "primary" business — the first non-platform one
-        // they're a member of. Real multi-business support would let
-        // the user switch; this is the single-business simplification
-        // most of the seller-side UI already assumes.
+        token.role = primaryRole;
+
         const ownBusiness = await db.businessMember.findFirst({
           where: { userId: user.id, business: { slug: { not: "autosoko-platform" } } },
           select: { businessId: true },
@@ -96,6 +90,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return token;
     },
+
     async session({ session, token }) {
       session.user.id = token.userId;
       session.user.role = token.role;

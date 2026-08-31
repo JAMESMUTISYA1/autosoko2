@@ -17,7 +17,7 @@ const COLUMNS = [
       { label: "Become a Seller", href: "/seller/listings/new" },
       { label: "Seller Dashboard", href: "/seller" },
       { label: "Business Verification", href: "/sell/verification" },
-      { label: "Wholesale & B2B", href: "/business" },
+      { label: "Wholesale & B2B", href: "/businesses" },
     ],
   },
   {
