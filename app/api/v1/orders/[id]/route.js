@@ -1,3 +1,10 @@
+// PATH: app/api/v1/orders/[id]/route.js
+// CHANGED: added `payments` to the select (id, provider, status,
+// providerTransactionId, createdAt) — everything else is byte-for-byte
+// the same as before. This is what lets the order detail page offer a
+// "resume payment" / "check again" option for an order that's still
+// unpaid, without a separate lookup.
+
 import { db } from "@/lib/db";
 import { getSession, unauthorized, forbidden } from "@/lib/auth/rbac";
 
@@ -34,6 +41,12 @@ export async function GET(request, { params }) {
         },
       },
       statusHistory: { select: { status: true, note: true, createdAt: true }, orderBy: { createdAt: "asc" } },
+      // NEW — most recent payment attempt first, so the frontend can grab
+      // payments[0] for the "resume payment" reference without filtering.
+      payments: {
+        select: { id: true, provider: true, status: true, providerTransactionId: true, createdAt: true },
+        orderBy: { createdAt: "desc" },
+      },
     },
   });
 

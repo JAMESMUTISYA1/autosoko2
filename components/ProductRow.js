@@ -1,3 +1,9 @@
+// PATH: components/ProductRow.js
+// No functional change — this already works with any array of
+// product-like objects ({id, slug, name, images, priceMinor, ...}),
+// which is exactly the shape getRelatedProducts() in lib/publicProducts.js
+// returns. Kept as-is.
+
 import Link from "next/link";
 import ProductCard from "@/components/ProductCard";
 

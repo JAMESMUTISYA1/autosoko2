@@ -1,10 +1,15 @@
-import { Youtube, Wrench, ListChecks } from "lucide-react";
+// PATH: components/FittingGuide.js
+
+import { Youtube, Wrench, ListChecks, FileText, Download } from "lucide-react";
+
+const DOC_TYPE_LABELS = { installation_guide: "Installation Guide", spec_sheet: "Spec Sheet" };
 
 export default function FittingGuide({ product }) {
   const hasTutorial = Boolean(product.youtubeUrl || product.fittingInstructions);
   const hasTools = Boolean(product.toolsNeeded?.length);
+  const hasDocuments = Boolean(product.documents?.length);
 
-  if (!hasTutorial && !hasTools) return null;
+  if (!hasTutorial && !hasTools && !hasDocuments) return null;
 
   return (
     <div className="mt-8 space-y-6">
@@ -42,6 +47,34 @@ export default function FittingGuide({ product }) {
               </p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* NEW — ProductDocument (installation_guide | spec_sheet) wasn't
+          surfaced anywhere on the original page at all. */}
+      {hasDocuments && (
+        <div>
+          <h2 className="font-display text-lg mb-3 flex items-center gap-2">
+            <FileText size={17} />
+            Documents
+          </h2>
+          <div className="space-y-2">
+            {product.documents.map((doc) => (
+              <a
+                key={doc.id}
+                href={doc.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between gap-3 border border-line rounded-md px-4 py-3 hover:border-fg transition-colors"
+              >
+                <span className="flex items-center gap-2 text-sm">
+                  <FileText size={15} className="text-muted shrink-0" />
+                  {doc.title || DOC_TYPE_LABELS[doc.type] || doc.type}
+                </span>
+                <Download size={15} className="text-muted shrink-0" />
+              </a>
+            ))}
+          </div>
         </div>
       )}
 

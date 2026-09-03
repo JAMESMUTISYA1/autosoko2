@@ -8,6 +8,7 @@ import { getCurrentSellerStore } from "@/data/sellerData";
 const SELLER_NAV = [
   { href: "/seller", label: "Overview", icon: "LayoutDashboard" },
   { href: "/seller/orders", label: "Orders", icon: "Package" },
+  { href: "/seller/messages", label: "Messages", icon: "MessageCircle" },
   { href: "/seller/vehicle-data", label: "Vehicle Data", icon: "Car" },
   { href: "/seller/listings", label: "Products", icon: "Car" },
   { href: "/seller/wallet", label: "Wallet", icon: "Wallet" },

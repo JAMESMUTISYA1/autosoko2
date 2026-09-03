@@ -2,9 +2,10 @@
 export const dynamic = 'force-dynamic';
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { BadgeCheck, Heart, MapPin, Star, ShoppingCart, Loader2 } from "lucide-react";
+import { BadgeCheck, Heart, MapPin, Star, ShoppingCart, Loader2, Zap } from "lucide-react";
 import { formatPrice } from "@/data/sampleData";
 import { useToast } from "@/contexts/ToastContext";
 import { useWishlist } from "@/contexts/WishlistContext";
@@ -16,7 +17,10 @@ export default function ProductCard({ product }) {
   const toast = useToast();
   const wishlist = useWishlist();
   const cart = useCart();
+  const router = useRouter();
   const [adding, setAdding] = useState(false);
+  const [buying, setBuying] = useState(false);
+
   const cover = product.images?.[0] || product.image;
   const saved = wishlist.isSaved(product.id);
   const nameMatchIndices = getFieldMatches(product._matches, "name");
@@ -35,12 +39,22 @@ export default function ProductCard({ product }) {
     await new Promise((r) => setTimeout(r, 350));
     cart.addItem(product, 1);
     setAdding(false);
-    toast.success(`Added to cart`);
+    toast.success("Added to cart");
+  }
+
+  async function buyNow(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    setBuying(true);
+    cart.addItem(product, 1);
+    await new Promise((r) => setTimeout(r, 200));
+    setBuying(false);
+    router.push("/checkout");
   }
 
   return (
     <Link
-      href={`/product/${product.slug}`}
+      href={`/product/${product.id}`}
       className="group block bg-white rounded-md border border-gray-300 overflow-hidden hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 transition-all"
     >
       <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
@@ -56,8 +70,8 @@ export default function ProductCard({ product }) {
           <span
             className={`text-[11px] font-medium px-2 py-1 rounded-sm ${
               product.condition === "new"
-                ? "bg-gray-900 text-white"         // dark background, white text
-                : "bg-gray-200 text-gray-800"      // light background, dark text
+                ? "bg-gray-900 text-white"
+                : "bg-gray-200 text-gray-800"
             }`}
           >
             {product.condition === "new" ? "New" : "Used"}
@@ -84,7 +98,7 @@ export default function ProductCard({ product }) {
       </div>
 
       <div className="p-3.5">
-        {/* Title: always dark gray */}
+        {/* Title */}
         <h3 className="text-sm text-gray-900 font-medium leading-snug line-clamp-2 min-h-[2.5rem]">
           {nameMatchIndices ? (
             <HighlightedText text={product.name} indices={nameMatchIndices} />
@@ -93,7 +107,7 @@ export default function ProductCard({ product }) {
           )}
         </h3>
 
-        {/* Price: dark background with white text for high contrast */}
+        {/* Price */}
         <div className="mt-2 inline-block bg-gray-900 text-white text-sm font-mono font-medium px-2 py-0.5 rounded-sm">
           {formatPrice(product.priceMinor, product.currency)}
         </div>
@@ -122,16 +136,30 @@ export default function ProductCard({ product }) {
           <p className="text-[11px] text-gray-600 mt-1">{product.unitsSold} sold</p>
         )}
 
-        {/* Add to Cart button – dark text on yellow for clarity */}
-        <button
-          type="button"
-          onClick={quickAdd}
-          disabled={adding}
-          className="w-full flex items-center justify-center gap-1.5 mt-3 bg-yellow-500 hover:bg-yellow-600 text-gray-900 text-xs font-semibold py-2 rounded-sm disabled:opacity-70 transition-colors"
-        >
-          {adding ? <Loader2 size={13} className="animate-spin" /> : <ShoppingCart size={13} />}
-          {adding ? "Adding..." : "Add to Cart"}
-        </button>
+        {/* Action Buttons */}
+        <div className="mt-3 space-y-2">
+          {/* Add to Cart */}
+          <button
+            type="button"
+            onClick={quickAdd}
+            disabled={adding}
+            className="w-full flex items-center justify-center gap-1.5 bg-yellow-500 hover:bg-yellow-600 text-gray-900 text-xs font-semibold py-2 rounded-sm disabled:opacity-70 transition-colors"
+          >
+            {adding ? <Loader2 size={13} className="animate-spin" /> : <ShoppingCart size={13} />}
+            {adding ? "Adding..." : "Add to Cart"}
+          </button>
+
+          {/* Buy Now */}
+          <button
+            type="button"
+            onClick={buyNow}
+            disabled={buying}
+            className="w-full flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-2 rounded-sm disabled:opacity-70 transition-colors"
+          >
+            {buying ? <Loader2 size={13} className="animate-spin" /> : <Zap size={13} />}
+            {buying ? "Processing..." : "Buy Now"}
+          </button>
+        </div>
       </div>
     </Link>
   );

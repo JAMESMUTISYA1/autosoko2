@@ -1,3 +1,13 @@
+// PATH: components/BoughtTogether.js
+// NOT currently rendered by app/product/[productId]/page.js — there's no
+// real "frequently bought together" data source in the schema (no
+// cross-sell/co-purchase table), so the page follows its own established
+// pattern of omitting a section entirely rather than showing something
+// fake. Left in place, untouched, in case a real cross-sell feature gets
+// built later. One thing worth fixing whenever that happens: the
+// `/product/${p.slug}` links below need to become `/product/${p.id}` to
+// match the route rename in this delivery (slug isn't globally unique).
+
 import Link from "next/link";
 import Image from "next/image";
 import { formatPrice } from "@/data/sampleData";

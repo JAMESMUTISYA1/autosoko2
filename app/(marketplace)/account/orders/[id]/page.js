@@ -1,3 +1,11 @@
+// PATH: app/account/orders/[id]/page.js
+// CHANGED: renders PaymentStatusPanel in mode="resume" whenever
+// order.paymentVerified is false and a Payment row exists (i.e. a payment
+// was started at some point but never confirmed) — this is the
+// "somewhere to add the payment code" surface for a buyer who comes back
+// later rather than staying on the checkout page. Everything else is
+// unchanged from the original.
+
 import { notFound, redirect } from "next/navigation";
 import { headers } from "next/headers";
 import Image from "next/image";
@@ -5,6 +13,7 @@ import { Check } from "lucide-react";
 import { auth } from "@/auth";
 import { getBuyerOrder, ORDER_STATUS_FLOW } from "@/data/buyerData";
 import { formatPrice } from "@/data/sampleData";
+import PaymentStatusPanel from "@/components/PaymentStatusPanel";
 
 function getBaseUrl() {
   if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
@@ -22,8 +31,6 @@ async function loadOrder(id) {
     if (!json.success) throw new Error(json.error?.message);
     const o = json.data;
 
-    // Adapt the real API's shape onto what this page was already built
-    // against (mock buyerData.js's `history`/`items[].image` fields).
     return {
       id,
       orderNumber: o.orderNumber,
@@ -33,6 +40,12 @@ async function loadOrder(id) {
       currency: o.currency,
       placedAt: new Date(o.createdAt).toLocaleDateString(),
       deliveryMethod: o.deliveryMethod,
+      paymentVerified: o.paymentVerified,
+      // Most recent payment attempt, if any — used to offer "resume
+      // payment" below. A "failed" latest payment still shows the panel
+      // (Check Again / manual code), same as a "pending" one, since both
+      // mean the order isn't paid yet.
+      latestPayment: o.payments?.[0] || null,
       items: o.items.map((i) => ({
         name: i.product.name,
         image: i.product.images?.[0]?.url || null,
@@ -60,6 +73,7 @@ export default async function OrderDetailPage({ params }) {
   if (!order) return notFound();
 
   const currentIndex = ORDER_STATUS_FLOW.indexOf(order.status);
+  const needsPayment = order.paymentVerified === false && order.latestPayment;
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-8">
@@ -70,6 +84,21 @@ export default async function OrderDetailPage({ params }) {
         </span>
       </div>
       <p className="text-sm text-muted mb-8">{order.storeName} · Placed {order.placedAt}</p>
+
+      {/* NEW — resume payment for an order that never got confirmed */}
+      {needsPayment && (
+        <div className="border border-yellow-300 bg-yellow-50 rounded-md p-5 mb-6">
+          <h2 className="font-display text-base mb-1 text-yellow-900">Payment Not Confirmed</h2>
+          <p className="text-sm text-yellow-800 mb-2">
+            We haven't received confirmation for this order's payment yet.
+          </p>
+          <PaymentStatusPanel
+            paymentRef={order.latestPayment.providerTransactionId}
+            provider={order.latestPayment.provider}
+            mode="resume"
+          />
+        </div>
+      )}
 
       {/* Tracking timeline */}
       <div className="border border-line rounded-md p-5 mb-6">

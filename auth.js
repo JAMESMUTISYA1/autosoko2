@@ -7,11 +7,6 @@ import { checkRateLimit } from "@/lib/auth/rateLimit";
 import { normalizePhone } from "@/lib/phone";
 import { authConfig } from "@/auth.config";
 
-// Buyer / platform auth — mounted at /api/auth/[...nextauth].
-// Extends auth.config.js (the edge-safe subset middleware uses) with the
-// DB-touching pieces. This session is intentionally separate from the
-// Admin and Seller sessions (see auth.admin.js / auth.seller.js) — logging
-// in here never grants admin or seller access, and vice versa.
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
 
@@ -26,10 +21,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const password = credentials?.password?.toString();
         if (!identifier || !password) return null;
 
-        // Rate limit BEFORE touching the database. Two buckets: per-IP
-        // (stops one attacker hammering many accounts) and per-identifier
-        // (stops distributed attempts against one account from many IPs) —
-        // same pattern as the admin/seller portals.
         const ip =
           request?.headers?.get?.("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
         const [ipLimit, idLimit] = await Promise.all([
@@ -45,8 +36,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           where: isEmail ? { email: lookupValue } : { phone: lookupValue },
         });
 
-        // Always run verifyPassword, even with no user, so response timing
-        // doesn't reveal whether the identifier exists.
         const valid = await verifyPassword(password, user?.passwordHash);
         if (!user || !valid) return null;
         if (user.status !== "active") return null;
@@ -68,6 +57,39 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
   callbacks: {
     ...authConfig.callbacks,
+
+    async signIn({ user, account, profile }) {
+      // Only handle Google OAuth here; credentials already have a user.
+      if (account?.provider === "google") {
+        const email = profile?.email?.toLowerCase();
+        if (!email) return false; // email is required for Google sign-in
+
+        // Check if user already exists by email
+        const existing = await db.user.findUnique({ where: { email } });
+        if (existing) {
+          // Optionally update their emailVerifiedAt if not set
+          if (!existing.emailVerifiedAt) {
+            await db.user.update({
+              where: { id: existing.id },
+              data: { emailVerifiedAt: new Date() },
+            });
+          }
+          return true;
+        }
+
+        // Create new user for Google sign-in
+        await db.user.create({
+          data: {
+            email,
+            fullName: profile?.name || "Google User",
+            avatarUrl: profile?.picture || null,
+            emailVerifiedAt: new Date(),
+            status: "active",
+          },
+        });
+      }
+      return true;
+    },
 
     async jwt({ token, user }) {
       if (user) {

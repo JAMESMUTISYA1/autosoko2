@@ -12,7 +12,7 @@ import CountryCodeSelect from "@/components/CountryCodeSelect";
 import { countries } from "@/data/countries";
 import { loginSchema, validate } from "@/lib/validation/authSchemas";
 import { useToast } from "@/contexts/ToastContext";
-import { normalizePhone } from "@/lib/phone"; // ✅ added
+import { normalizePhone } from "@/lib/phone";
 
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_SECONDS = 30;
@@ -22,8 +22,6 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const toast = useToast();
 
-  const [mode, setMode] = useState("email");
-  const [email, setEmail] = useState("");
   const [countryCode, setCountryCode] = useState("KE");
   const [nationalNumber, setNationalNumber] = useState("");
   const [password, setPassword] = useState("");
@@ -37,10 +35,9 @@ function LoginForm() {
   const redirectTo = searchParams.get("redirectTo") || "/";
 
   function getIdentifier() {
-    if (mode === "email") return email;
     const dial = countries.find((c) => c.iso === countryCode)?.dial || "";
     const rawPhone = `+${dial}${nationalNumber}`;
-    return normalizePhone(rawPhone); // ✅ returns "2547..."
+    return normalizePhone(rawPhone);
   }
 
   async function handleSubmit(e) {
@@ -68,7 +65,7 @@ function LoginForm() {
     if (result?.error) {
       const nextAttempts = attempts + 1;
       setAttempts(nextAttempts);
-      setFormError("Invalid email/phone or password.");
+      setFormError("Invalid phone or password.");
 
       if (nextAttempts >= MAX_ATTEMPTS) {
         setLockedUntil(Date.now() + LOCKOUT_SECONDS * 1000);
@@ -95,79 +92,33 @@ function LoginForm() {
         <div className="flex-1 h-px bg-gray-200" />
       </div>
 
-      {/* Login mode toggle */}
-      <div className="flex gap-2 mb-5">
-        <button
-          type="button"
-          onClick={() => setMode("email")}
-          className={`flex-1 py-2 text-sm font-medium rounded-sm border ${
-            mode === "email"
-              ? "border-blue-500 text-blue-500 bg-blue-50"
-              : "border-gray-300 text-gray-500 hover:bg-gray-50"
-          }`}
-        >
-          Email
-        </button>
-        <button
-          type="button"
-          onClick={() => setMode("phone")}
-          className={`flex-1 py-2 text-sm font-medium rounded-sm border ${
-            mode === "phone"
-              ? "border-blue-500 text-blue-500 bg-blue-50"
-              : "border-gray-300 text-gray-500 hover:bg-gray-50"
-          }`}
-        >
-          Phone
-        </button>
-      </div>
-
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
-        {mode === "email" ? (
-          <div>
-            <label htmlFor="email" className="block text-xs text-gray-500 mb-1.5">
-              Email Address
-            </label>
+        <div>
+          <label htmlFor="phone" className="block text-xs text-gray-500 mb-1.5">
+            Phone Number
+          </label>
+          <div className="flex gap-2">
+            <div className="w-1/3">
+              <CountryCodeSelect value={countryCode} onChange={setCountryCode} />
+            </div>
             <input
-              id="email"
-              type="email"
-              inputMode="email"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              id="phone"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              placeholder="712345678"
+              value={nationalNumber}
+              onChange={(e) => setNationalNumber(e.target.value)}
               aria-invalid={!!fieldErrors.identifier}
-              className={`w-full border rounded-sm px-3 py-2.5 text-sm bg-white text-gray-900 focus:outline-none focus:border-blue-500 ${
+              className={`flex-1 border rounded-sm px-3 py-2.5 text-sm bg-white text-gray-900 focus:outline-none focus:border-blue-500 ${
                 fieldErrors.identifier ? "border-red-500" : "border-gray-300"
               }`}
             />
           </div>
-        ) : (
-          <div>
-            <label htmlFor="phone" className="block text-xs text-gray-500 mb-1.5">
-              Phone Number
-            </label>
-            <div className="flex gap-2">
-              <div className="w-1/3">
-                <CountryCodeSelect value={countryCode} onChange={setCountryCode} />
-              </div>
-              <input
-                id="phone"
-                type="tel"
-                inputMode="tel"
-                autoComplete="tel"
-                placeholder="712345678"
-                value={nationalNumber}
-                onChange={(e) => setNationalNumber(e.target.value)}
-                aria-invalid={!!fieldErrors.identifier}
-                className={`flex-1 border rounded-sm px-3 py-2.5 text-sm bg-white text-gray-900 focus:outline-none focus:border-blue-500 ${
-                  fieldErrors.identifier ? "border-red-500" : "border-gray-300"
-                }`}
-              />
-            </div>
-          </div>
-        )}
-        {fieldErrors.identifier && (
-          <p className="text-xs text-red-500 font-semibold mt-1">{fieldErrors.identifier}</p>
-        )}
+          {fieldErrors.identifier && (
+            <p className="text-xs text-red-500 font-semibold mt-1">{fieldErrors.identifier}</p>
+          )}
+        </div>
 
         <div>
           <label htmlFor="password" className="block text-xs text-gray-500 mb-1.5">
@@ -183,7 +134,6 @@ function LoginForm() {
           />
         </div>
 
-        {/* Forgot password link */}
         <div className="flex justify-end mt-1">
           <Link
             href="/auth/forgot-password"

@@ -27,9 +27,6 @@ export async function GET(request) {
       business: { select: { id: true, name: true, slug: true, logoUrl: true, verificationStatus: true } },
       product: { select: { id: true, name: true } },
       messages: { orderBy: { createdAt: "desc" }, take: 1 },
-      // Prisma's relation-count `where` filters the count itself, not the
-      // parent rows — this gives an accurate per-conversation unread
-      // count in the same query instead of N+1 follow-up queries.
       _count: { select: { messages: { where: { readAt: null, NOT: { senderId: userId } } } } },
     },
     orderBy: [{ lastMessageAt: "desc" }, { id: "desc" }],
@@ -92,71 +89,70 @@ export async function POST(request) {
   const { businessId, productSlug } = parsed.data;
 
   try {
-    const result = await db.$transaction(async (tx) => {
-      const business = await tx.business.findFirst({
-        where: { id: businessId, deletedAt: null, status: "active" },
-        select: { id: true },
+    // 1. Verify business exists and is active
+    const business = await db.business.findFirst({
+      where: { id: businessId, deletedAt: null, status: "active" },
+      select: { id: true },
+    });
+    if (!business) {
+      return NextResponse.json(
+        { success: false, error: { code: "NOT_FOUND", message: "This seller isn't available to message right now." } },
+        { status: 404 }
+      );
+    }
+
+    // 2. Resolve product if slug provided
+    let product = null;
+    if (productSlug) {
+      product = await db.product.findFirst({
+        where: { businessId, slug: productSlug, deletedAt: null },
+        select: { id: true, name: true },
       });
-      if (!business) {
-        return { error: { status: 404, code: "NOT_FOUND", message: "This seller isn't available to message right now." } };
-      }
+    }
 
-      let product = null;
-      if (productSlug) {
-        product = await tx.product.findFirst({
-          where: { businessId, slug: productSlug, deletedAt: null },
-          select: { id: true, name: true },
-        });
-      }
+    // 3. Find existing conversation
+    let conversation = await db.conversation.findFirst({
+      where: { buyerId: userId, businessId },
+    });
 
-      let conversation = await tx.conversation.findFirst({ where: { buyerId: userId, businessId } });
-
-      if (!conversation) {
-        conversation = await tx.conversation.create({
-          data: {
-            buyerId: userId,
-            businessId,
-            productId: product?.id || null,
-            lastMessageAt: product ? new Date() : null,
-          },
-        });
-        if (product) {
-          await tx.message.create({
-            data: {
-              conversationId: conversation.id,
-              senderId: userId,
-              body: `Started a conversation about "${product.name}".`,
-              messageType: "system",
-            },
-          });
-        }
-      } else if (product && !conversation.productId) {
-        // Existing thread, product context showing up for the first time
-        // — attach it and drop one lightweight system note. If the thread
-        // already has product context, do nothing (avoid noisy repeats on
-        // every revisit).
-        await tx.conversation.update({
-          where: { id: conversation.id },
-          data: { productId: product.id, lastMessageAt: new Date() },
-        });
-        await tx.message.create({
+    // 4. Create if not exists
+    if (!conversation) {
+      conversation = await db.conversation.create({
+        data: {
+          buyerId: userId,
+          businessId,
+          productId: product?.id || null,
+          lastMessageAt: product ? new Date() : null,
+        },
+      });
+      // Add system message if product context exists
+      if (product) {
+        await db.message.create({
           data: {
             conversationId: conversation.id,
             senderId: userId,
-            body: `Also asking about "${product.name}".`,
+            body: `Started a conversation about "${product.name}".`,
             messageType: "system",
           },
         });
       }
-
-      return { id: conversation.id };
-    });
-
-    if (result.error) {
-      return NextResponse.json({ success: false, error: result.error }, { status: result.error.status });
+    } else if (product && !conversation.productId) {
+      // Existing thread, new product context
+      await db.conversation.update({
+        where: { id: conversation.id },
+        data: { productId: product.id, lastMessageAt: new Date() },
+      });
+      await db.message.create({
+        data: {
+          conversationId: conversation.id,
+          senderId: userId,
+          body: `Also asking about "${product.name}".`,
+          messageType: "system",
+        },
+      });
     }
 
-    return NextResponse.json({ success: true, data: { id: result.id } }, { status: 201 });
+    return NextResponse.json({ success: true, data: { id: conversation.id } }, { status: 201 });
   } catch (error) {
     console.error("Failed to find/create conversation:", error);
     return NextResponse.json(
