@@ -6,13 +6,13 @@ import Link from "next/link";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { useToast } from "@/contexts/ToastContext";
 import OverviewTab from "./OverviewTab";
-import MembersTab from "./MembersTab";
-import BranchesTab from "./BranchesTab";
-import ProductsTab from "./ProductsTab";
-import IncomeTab from "./IncomeTab";
-import VerificationTab from "./VerificationTab";
-import PayoutTab from "./PayoutTab";
-import SettingsTab from "./SettingsTab";
+import MembersTab from "./Memberstab";
+import BranchesTab from "./Branchestab";
+import ProductsTab from "./Productstab";
+import IncomeTab from "./Incometab";
+import VerificationTab from "./Verificationtab";
+import PayoutTab from "./Payouttab";
+import SettingsTab from "./Settingstab";
 
 const TABS = [
   { id: "overview", label: "Overview" },
