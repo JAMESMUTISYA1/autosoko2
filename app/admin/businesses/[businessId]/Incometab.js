@@ -9,6 +9,7 @@ export default function IncomeTab({ businessId }) {
 
   useEffect(() => {
     fetch(`/api/v1/admin/businesses/${businessId}/income`)
+    
       .then((r) => r.json())
       .then((json) => {
         if (json.success) setData(json.data);

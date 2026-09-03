@@ -11,6 +11,7 @@ export default function ProductsTab({ businessId }) {
   const [showProductModal, setShowProductModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  
 
   useEffect(() => {
     fetchProducts();

@@ -14,6 +14,7 @@ export default function VerificationTab({ business, onUpdate }) {
     setSaving(true);
     try {
       const res = await fetch(`/api/v1/admin/businesses/${business.id}/verification`, {
+        
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ verificationStatus }),

@@ -8,6 +8,7 @@ export default function BranchesTab({ businessId }) {
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  
   const [editing, setEditing] = useState(null);
   const toast = useToast();
 

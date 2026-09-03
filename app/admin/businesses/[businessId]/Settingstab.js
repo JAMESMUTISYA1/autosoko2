@@ -13,6 +13,7 @@ const BUSINESS_TYPES = [
 export default function SettingsTab({ business, onUpdate }) {
   const router = useRouter();
   const toast = useToast();
+  
 
   const [form, setForm] = useState({
     name: business.name,

@@ -12,6 +12,7 @@ export default function OverviewTab({ business, onUpdate }) {
   async function setStatus(status) {
     if (status === business.status) return;
     if (!confirm(`Change status to "${status}"?`)) return;
+    
     setChangingStatus(true);
     try {
       const res = await fetch(`/api/v1/admin/businesses/${business.id}/status`, {

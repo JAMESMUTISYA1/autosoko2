@@ -14,6 +14,7 @@ export default function PayoutTab({ businessId }) {
   useEffect(() => {
     fetch(`/api/v1/admin/businesses/${businessId}/payout`)
       .then((r) => r.json())
+      
       .then((json) => {
         if (json.success && json.data) {
           setPayout(json.data);
