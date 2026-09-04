@@ -1,12 +1,14 @@
 "use client";
 export const dynamic = 'force-dynamic';
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signIn, signOut, useSession } from "next-auth/react";
+import { signIn, signOut, useSession, getSession } from "next-auth/react";
 import { Loader2, ShieldCheck, ArrowLeft } from "lucide-react";
 import PasswordInput from "@/components/PasswordInput";
+import CountryCodeSelect from "@/components/CountryCodeSelect";
+import { countries } from "@/data/countries";
 import { normalizePhone } from "@/lib/phone";
 
 const MAX_ATTEMPTS = 5;
@@ -17,7 +19,10 @@ function AdminLoginForm() {
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();
 
-  const [identifier, setIdentifier] = useState("");
+  const [loginMode, setLoginMode] = useState("phone"); // "phone" or "email"
+  const [countryCode, setCountryCode] = useState("KE");
+  const [nationalNumber, setNationalNumber] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -27,8 +32,8 @@ function AdminLoginForm() {
   const locked = lockedUntil !== null && Date.now() < lockedUntil;
   const redirectTo = searchParams.get("callbackUrl") || "/admin";
 
-  // If already authenticated as admin, redirect
-  useState(() => {
+  // If already authenticated as admin, redirect (using useEffect for reactivity)
+  useEffect(() => {
     if (status === "authenticated") {
       const role = session.user.role;
       const isAdmin = Array.isArray(role)
@@ -43,9 +48,13 @@ function AdminLoginForm() {
   }, [status, session, router]);
 
   function getIdentifier() {
-    // Only phone input, but admin may still use email; keep normalization for phone
-    if (identifier.includes("@")) return identifier.toLowerCase();
-    return normalizePhone(identifier);
+    if (loginMode === "email") {
+      return email.toLowerCase();
+    } else {
+      const dial = countries.find((c) => c.iso === countryCode)?.dial || "";
+      const rawPhone = `+${dial}${nationalNumber}`;
+      return normalizePhone(rawPhone);
+    }
   }
 
   async function handleSubmit(e) {
@@ -74,9 +83,8 @@ function AdminLoginForm() {
       return;
     }
 
-    // Verify admin role from fresh session
-    const sessionRes = await fetch("/api/auth/session");
-    const sessionData = await sessionRes.json();
+    // Use getSession() – respects the admin basePath from SessionProvider
+    const sessionData = await getSession();
     const role = sessionData?.user?.role;
     const isAdmin = Array.isArray(role)
       ? role.some((r) => ["Super Admin", "Ops Admin"].includes(r))
@@ -119,19 +127,71 @@ function AdminLoginForm() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="identifier" className="block text-xs font-medium text-gray-700 mb-1.5">
-                Email or Phone
-              </label>
-              <input
-                id="identifier"
-                type="text"
-                value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="admin@autosoko.africa or 0712345678"
-                className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-              />
+            {/* Login mode toggle */}
+            <div className="flex bg-gray-100 rounded-md p-1">
+              <button
+                type="button"
+                onClick={() => setLoginMode("phone")}
+                className={`flex-1 py-2 text-sm font-medium rounded transition-colors ${
+                  loginMode === "phone"
+                    ? "bg-white shadow-sm text-gray-900"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Phone
+              </button>
+              <button
+                type="button"
+                onClick={() => setLoginMode("email")}
+                className={`flex-1 py-2 text-sm font-medium rounded transition-colors ${
+                  loginMode === "email"
+                    ? "bg-white shadow-sm text-gray-900"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Email
+              </button>
             </div>
+
+            {/* Identifier field based on mode */}
+            {loginMode === "phone" ? (
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                  Phone Number
+                </label>
+                <div className="flex gap-2">
+                  <div className="w-1/3">
+                    <CountryCodeSelect value={countryCode} onChange={setCountryCode} />
+                  </div>
+                  <input
+                    id="phone"
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    placeholder="712345678"
+                    value={nationalNumber}
+                    onChange={(e) => setNationalNumber(e.target.value)}
+                    className="flex-1 border border-gray-300 rounded-md px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div>
+                <label htmlFor="email" className="block text-xs font-medium text-gray-700 mb-1.5">
+                  Email Address
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  placeholder="admin@autosoko.africa"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                />
+              </div>
+            )}
 
             <div>
               <label htmlFor="password" className="block text-xs font-medium text-gray-700 mb-1.5">

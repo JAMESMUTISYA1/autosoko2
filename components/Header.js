@@ -25,7 +25,7 @@ const NAV_LINKS = [
   { label: "Part Radar", href: "/part-radar" },
   { label: "Services", href: "/services" },
   { label: "Sell on AutoSoko", href: "/seller/listings/new" },
-  { label: "Orders", href: "/account/orders" },
+  { label: "My Orders", href: "/account/orders" },
   { label: "Contact Us", href: "/contact" },
 ];
 
@@ -36,7 +36,7 @@ const ICON_LINKS = [
 ];
 
 // ─── Component that uses `useSearchParams` — must be wrapped in <Suspense> ───
-function NavLinks({ mobile = false }) {
+function NavLinks({ mobile = false, onLinkClick }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -55,20 +55,25 @@ function NavLinks({ mobile = false }) {
     <>
       {NAV_LINKS.map((link) => {
         const active = isActive(link.href);
-        let className =
-          mobile
-            ? `block py-2.5 text-sm transition-colors ${
-                active
-                  ? "text-yellow-500 font-semibold border-b-2 border-yellow-500"
-                  : "text-gray-800 hover:text-accent"
-              }`
-            : `whitespace-nowrap pb-1 transition-colors ${
-                active
-                  ? "text-yellow-500 font-semibold border-b-2 border-yellow-500"
-                  : "hover:text-accent"
-              }`;
+        const className = mobile
+          ? `block py-2.5 text-sm transition-colors ${
+              active
+                ? "text-yellow-500 font-semibold border-b-2 border-yellow-500"
+                : "text-gray-800 hover:text-accent"
+            }`
+          : `whitespace-nowrap pb-1 transition-colors ${
+              active
+                ? "text-yellow-500 font-semibold border-b-2 border-yellow-500"
+                : "hover:text-accent"
+            }`;
+
         return (
-          <Link key={link.href} href={link.href} className={className}>
+          <Link
+            key={link.href}
+            href={link.href}
+            className={className}
+            onClick={mobile && onLinkClick ? onLinkClick : undefined}
+          >
             {link.label}
           </Link>
         );
@@ -99,6 +104,8 @@ export default function Header() {
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [mobileOpen]);
+
+  const closeMobileMenu = () => setMobileOpen(false);
 
   return (
     <>
@@ -214,7 +221,23 @@ export default function Header() {
               )}
             </div>
 
+            {/* Mobile header icons: Sign In/Account, Cart, Hamburger */}
             <div className="md:hidden ml-auto flex items-center gap-3">
+              {status === "authenticated" ? (
+                <Link href="/account" className="flex flex-col items-center gap-0.5" aria-label="Account">
+                  <User size={22} />
+                  <span className="text-[10px]">Account</span>
+                </Link>
+              ) : (
+                <Link
+                  href="/auth/login"
+                  className="flex items-center gap-1 bg-accent text-white px-3 py-1.5 rounded-sm text-xs font-semibold"
+                  aria-label="Sign In"
+                >
+                  <User size={16} />
+                  Sign In
+                </Link>
+              )}
               <Link href="/cart" className="relative" aria-label="Cart">
                 <ShoppingCart size={22} />
                 {itemCount > 0 && (
@@ -254,7 +277,7 @@ export default function Header() {
           <button
             type="button"
             className="absolute inset-0 w-full h-full bg-black/50"
-            onClick={() => setMobileOpen(false)}
+            onClick={closeMobileMenu}
             aria-label="Close menu"
           />
 
@@ -265,7 +288,7 @@ export default function Header() {
               </span>
               <button
                 type="button"
-                onClick={() => setMobileOpen(false)}
+                onClick={closeMobileMenu}
                 aria-label="Close menu"
                 className="p-2"
               >
@@ -276,7 +299,7 @@ export default function Header() {
             <div className="flex-1 overflow-y-auto px-5 py-4">
               <nav className="space-y-1">
                 <Suspense fallback={<div className="h-6 w-32 animate-pulse bg-gray-100" />}>
-                  <NavLinks mobile={true} />
+                  <NavLinks mobile={true} onLinkClick={closeMobileMenu} />
                 </Suspense>
               </nav>
 
@@ -287,7 +310,7 @@ export default function Header() {
                     <Link
                       key={link.href}
                       href={link.href}
-                      onClick={() => setMobileOpen(false)}
+                      onClick={closeMobileMenu}
                       className="flex flex-col items-center gap-1.5 py-3 text-xs text-gray-800 rounded-sm hover:bg-gray-100 transition-colors"
                     >
                       <Icon size={20} />
@@ -303,7 +326,7 @@ export default function Header() {
                 <button
                   type="button"
                   onClick={() => {
-                    setMobileOpen(false);
+                    closeMobileMenu();
                     signOut({ callbackUrl: "/" });
                   }}
                   className="flex items-center justify-center gap-2 border border-gray-300 text-gray-800 font-semibold px-4 py-3 rounded-sm w-full hover:bg-gray-100"
@@ -314,7 +337,7 @@ export default function Header() {
               ) : (
                 <Link
                   href="/auth/login"
-                  onClick={() => setMobileOpen(false)}
+                  onClick={closeMobileMenu}
                   className="flex items-center justify-center gap-2 bg-accent text-white font-semibold px-4 py-3 rounded-sm"
                 >
                   <User size={16} />

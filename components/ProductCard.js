@@ -97,7 +97,7 @@ export default function ProductCard({ product }) {
         </button>
       </div>
 
-      <div className="p-3.5">
+      <div className="p-4">
         {/* Title */}
         <h3 className="text-sm text-gray-900 font-medium leading-snug line-clamp-2 min-h-[2.5rem]">
           {nameMatchIndices ? (
@@ -136,14 +136,14 @@ export default function ProductCard({ product }) {
           <p className="text-[11px] text-gray-600 mt-1">{product.unitsSold} sold</p>
         )}
 
-        {/* Action Buttons */}
-        <div className="mt-3 space-y-2">
+        {/* Action Buttons – side by side */}
+        <div className="mt-3 flex gap-2">
           {/* Add to Cart */}
           <button
             type="button"
             onClick={quickAdd}
             disabled={adding}
-            className="w-full flex items-center justify-center gap-1.5 bg-yellow-500 hover:bg-yellow-600 text-gray-900 text-xs font-semibold py-2 rounded-sm disabled:opacity-70 transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 bg-yellow-500 hover:bg-yellow-600 text-gray-900 text-xs font-semibold py-2 rounded-sm disabled:opacity-70 transition-colors"
           >
             {adding ? <Loader2 size={13} className="animate-spin" /> : <ShoppingCart size={13} />}
             {adding ? "Adding..." : "Add to Cart"}
@@ -154,7 +154,7 @@ export default function ProductCard({ product }) {
             type="button"
             onClick={buyNow}
             disabled={buying}
-            className="w-full flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-2 rounded-sm disabled:opacity-70 transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-2 rounded-sm disabled:opacity-70 transition-colors"
           >
             {buying ? <Loader2 size={13} className="animate-spin" /> : <Zap size={13} />}
             {buying ? "Processing..." : "Buy Now"}

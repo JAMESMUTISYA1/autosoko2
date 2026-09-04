@@ -6,7 +6,6 @@ import ProductCard from "@/components/ProductCard";
 import ProductCardSkeleton from "@/components/skeletons/ProductCardSkeleton";
 import CategorySkeleton from "@/components/skeletons/CategorySkeleton";
 import { db } from "@/lib/db";
-import { vehicleMakes } from "@/data/sampleData";
 
 // How-it-works steps (static)
 const STEPS = [
@@ -89,6 +88,56 @@ async function CategoriesSection() {
   });
 
   return <CategoryGrid categories={categories} />;
+}
+
+// Async component to fetch vehicle makes from the database. Ordered by how
+// many models each make has (most to least) rather than alphabetically —
+// the makes with real catalog depth are what's actually useful to surface
+// on the homepage, and this needs no extra "popularity" column on
+// VehicleMake to get there. Only makes with a logo are shown — this is a
+// branding strip, and a make with no logoUrl would render as a bare text
+// pill next to logo'd ones, which looks unfinished rather than
+// intentional.
+async function VehicleMakesSection() {
+  const makes = await db.vehicleMake.findMany({
+    where: { logoUrl: { not: null } },
+    orderBy: { models: { _count: "desc" } },
+    take: 10,
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      logoUrl: true,
+    },
+  });
+
+  if (makes.length === 0) return null;
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      {makes.map((make) => (
+        <a
+          key={make.id}
+          href={`/search?make=${make.slug}`}
+          className="flex flex-col items-center justify-center gap-2 text-center border border-line rounded-md py-4 sm:py-5 px-3 text-gray-900 font-medium text-sm hover:border-accent hover:bg-white transition-colors"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={make.logoUrl} alt="" className="w-12 h-12 sm:w-14 sm:h-14 object-contain shrink-0" />
+          {make.name}
+        </a>
+      ))}
+    </div>
+  );
+}
+
+function VehicleMakeSkeleton() {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      {Array.from({ length: 10 }).map((_, i) => (
+        <div key={i} className="h-20 sm:h-24 rounded-md border border-line bg-gray-100 animate-pulse" />
+      ))}
+    </div>
+  );
 }
 
 export default function HomePage() {
@@ -210,21 +259,15 @@ export default function HomePage() {
         </Suspense>
       </section>
 
-      {/* Shop by vehicle make — static */}
+      {/* Shop by vehicle make — now DB-backed, same Suspense pattern as
+          the two sections above (was a hardcoded `vehicleMakes` mock array
+          from @/data/sampleData before) */}
       <section className="bg-gray-50 border-y border-line">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-8">
           <h2 className="font-display text-2xl text-gray-900 mb-4">Shop by Vehicle Make</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            {vehicleMakes.map((make) => (
-              <a
-                key={make}
-                href={`/search?make=${make}`}
-                className="flex items-center justify-center text-center border border-line rounded-md py-3 sm:py-4 px-3 text-gray-900 font-medium text-sm hover:border-accent hover:bg-white transition-colors"
-              >
-                {make}
-              </a>
-            ))}
-          </div>
+          <Suspense fallback={<VehicleMakeSkeleton />}>
+            <VehicleMakesSection />
+          </Suspense>
         </div>
       </section>
 
