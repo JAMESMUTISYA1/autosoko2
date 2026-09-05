@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 import { Suspense } from "react";
 import { Search, MessageCircle, Truck, ShieldCheck } from "lucide-react";
 import CategoryGrid from "@/components/CategoryGrid";
-import ProductCard from "@/components/ProductCard";
+import FeaturedProducts from "@/components/FeaturedProducts";
 import ProductCardSkeleton from "@/components/skeletons/ProductCardSkeleton";
 import CategorySkeleton from "@/components/skeletons/CategorySkeleton";
 import { db } from "@/lib/db";
@@ -29,50 +29,13 @@ const STEPS = [
   },
 ];
 
-// Async component to fetch featured products from the database
-async function FeaturedProducts() {
-  const products = await db.product.findMany({
-    where: {
-      status: "active",
-      deletedAt: null,
-      sponsored: true,
-    },
-    orderBy: { viewCount: "desc" },
-    take: 6,
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      priceMinor: true,
-      currency: true,
-      stockQuantity: true,
-      condition: true,
-      brand: true,
-      images: {
-        orderBy: { sortOrder: "asc" },
-        take: 1,
-        select: { url: true },
-      },
-      business: {
-        select: {
-          name: true,
-          slug: true,
-          verificationStatus: true,
-          ratingAvg: true,
-          ratingCount: true,
-        },
-      },
-    },
-  });
-
-  return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-      {products.map((p) => (
-        <ProductCard key={p.id} product={p} />
-      ))}
-    </div>
-  );
-}
+// NOTE: FeaturedProducts is now imported from @/components/FeaturedProducts
+// rather than defined inline here. The inline version passed raw Prisma
+// rows straight to ProductCard — `images` stayed as `[{ url }]` (an array
+// of objects), and ProductCard's `product.images?.[0]` expects a plain
+// URL string. That's why images worked on the search page (which flattens
+// them in runSearch()) but not here. The imported version does that same
+// flattening.
 
 // Async component to fetch categories from the database
 async function CategoriesSection() {
@@ -102,7 +65,7 @@ async function VehicleMakesSection() {
   const makes = await db.vehicleMake.findMany({
     where: { logoUrl: { not: null } },
     orderBy: { models: { _count: "desc" } },
-    take: 10,
+    take: 15,
     select: {
       id: true,
       name: true,
@@ -114,16 +77,16 @@ async function VehicleMakesSection() {
   if (makes.length === 0) return null;
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+    <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-8 lg:grid-cols-10 xl:grid-cols-[repeat(15,minmax(0,1fr))] gap-2">
       {makes.map((make) => (
         <a
           key={make.id}
           href={`/search?make=${make.slug}`}
-          className="flex flex-col items-center justify-center gap-2 text-center border border-line rounded-md py-4 sm:py-5 px-3 text-gray-900 font-medium text-sm hover:border-accent hover:bg-white transition-colors"
+          className="flex flex-col items-center justify-center gap-1.5 text-center border border-line rounded-md py-3 px-1.5 text-gray-900 font-medium text-xs hover:border-accent hover:bg-white transition-colors"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={make.logoUrl} alt="" className="w-12 h-12 sm:w-14 sm:h-14 object-contain shrink-0" />
-          {make.name}
+          <img src={make.logoUrl} alt="" className="w-8 h-8 sm:w-9 sm:h-9 object-contain shrink-0" />
+          <span className="truncate w-full">{make.name}</span>
         </a>
       ))}
     </div>
